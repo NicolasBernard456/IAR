@@ -1,17 +1,9 @@
 #!/usr/bin/env python
 
 import rospy
-import math
-import random #used for the random choice of a strategy
 from std_msgs.msg import Int16,Float32,Bool,Float32MultiArray,Int16MultiArray
 from nav_msgs.msg import Odometry
 from fastsim.srv import *
-from subsomption.msg import Channel
-from sensor_msgs.msg import LaserScan
-from std_msgs.msg import Float32MultiArray
-import sys
-import numpy as np
-import time
 
 
 
@@ -36,12 +28,15 @@ class Deplacement():
       odom=data
       
     def callback_next_pose(self,data):
-        self.x = data.data[0]
-        self.y = data.data[1]
-    
+        if(len(data.data) == 2):    #Envoi de coordonnee x y pixels
+            self.x = data.data[0]
+            self.y = data.data[1]
+        elif(len(data.data) == 3):#Envoi de coordonnee x y normalise
+            print('ok')
+            self.x = 32 + data.data[1] * 60 + 3 * data.data[1] 
+            self.y = 32 + data.data[2] * 60 + 3 * data.data[2]
+        print(len(data.data))
     def deplacement(self):
-        rospy.init_node('strategy_gating', anonymous=True)
-        rospy.Subscriber("/next_pose", Float32MultiArray, self.callback_next_pose)
         th = 0
         # Main loop:
         while (not rospy.is_shutdown()):
@@ -59,6 +54,9 @@ class Deplacement():
 #-------------------------------------------
 if __name__ == '__main__':
     D = Deplacement()
+    rospy.Subscriber("/next_pose", Float32MultiArray, D.callback_next_pose,0)
+
+    rospy.init_node('deplacement_case', anonymous=True)
     try:
         D.deplacement()
     except rospy.ROSInterruptException: pass

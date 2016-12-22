@@ -22,8 +22,19 @@ int main(int argc, char **argv){
 		chatter_pub.publish(msg);
 		ros::spinOnce();
 	}
-	else 
-		ROS_ERROR("Besoin de 2 arguments (x et y) position du robot");
+	else if(argc == 4){
+		ros::Rate poll_rate(100);
+		while(chatter_pub.getNumSubscribers() == 0)
+			poll_rate.sleep();
+		std_msgs::Float32MultiArray msg;
+		msg.data.push_back(atof(argv[1]));
+		msg.data.push_back(atof(argv[2]));
+		msg.data.push_back(atof(argv[3]));
+		chatter_pub.publish(msg);
+		ros::spinOnce();
+	}
+	else
+		ROS_ERROR("Besoin de 2 arguments (x et y) position du robot ou 3 arguments (x et y normalisée) position du robot");
 
 	return 0;
 }
