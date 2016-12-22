@@ -1,0 +1,24 @@
+# project libfastsim (0.0.1) configured on Wed Dec 21 14:19:16 2016 by
+# waf 1.7.16 (abi 98, python 20706f0 on linux2)
+# using ./waf configure
+#
+----------------------------------------
+Setting top to
+/home/nico/catkin_ws/src/IAR/libfastsim
+----------------------------------------
+Setting out to
+/home/nico/catkin_ws/src/IAR/libfastsim/build
+----------------------------------------
+Checking for 'g++' (c++ compiler)
+find program=['g++', 'c++'] paths=['/opt/ros/indigo/bin', '/usr/local/cuda-6.5/bin', '/home/nico/bin', '/usr/local/sbin', '/usr/local/bin', '/usr/sbin', '/usr/bin', '/sbin', '/bin', '/usr/games', '/usr/local/games', '/usr/lib/jvm/java-8-oracle/bin', '/usr/lib/jvm/java-8-oracle/db/bin', '/usr/lib/jvm/java-8-oracle/jre/bin'] var='CXX' -> '/usr/bin/g++'
+find program=['ar'] paths=['/opt/ros/indigo/bin', '/usr/local/cuda-6.5/bin', '/home/nico/bin', '/usr/local/sbin', '/usr/local/bin', '/usr/sbin', '/usr/bin', '/sbin', '/bin', '/usr/games', '/usr/local/games', '/usr/lib/jvm/java-8-oracle/bin', '/usr/lib/jvm/java-8-oracle/db/bin', '/usr/lib/jvm/java-8-oracle/jre/bin'] var='AR' -> '/usr/bin/ar'
+/usr/bin/g++
+----------------------------------------
+Checking for 'gcc' (c compiler)
+find program=['gcc', 'cc'] paths=['/opt/ros/indigo/bin', '/usr/local/cuda-6.5/bin', '/home/nico/bin', '/usr/local/sbin', '/usr/local/bin', '/usr/sbin', '/usr/bin', '/sbin', '/bin', '/usr/games', '/usr/local/games', '/usr/lib/jvm/java-8-oracle/bin', '/usr/lib/jvm/java-8-oracle/db/bin', '/usr/lib/jvm/java-8-oracle/jre/bin'] var='CC' -> '/usr/bin/gcc'
+(tool ar is already loaded, skipping)
+/usr/bin/gcc
+----------------------------------------
+Checking for SDL
+find program=['sdl-config'] paths=['/opt/ros/indigo/bin', '/usr/local/cuda-6.5/bin', '/home/nico/bin', '/usr/local/sbin', '/usr/local/bin', '/usr/sbin', '/usr/bin', '/sbin', '/bin', '/usr/games', '/usr/local/games', '/usr/lib/jvm/java-8-oracle/bin', '/usr/lib/jvm/java-8-oracle/db/bin', '/usr/lib/jvm/java-8-oracle/jre/bin'] var='SDL-CONFIG' -> '/usr/bin/sdl-config'
+ok

@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<fastsim>
+  <display enable="true"/>
+
+  <!-- world -->
+  <map name="labyrinthe.pbm" size="720"/>
+  <robot x="300" y="50" theta="1.5" diameter="10"/>
+  <!-- illuminated_switch x="300" y="500" color="0" radius="10" on="true"/ -->
+  <goal x="300" y="480" color="0" diameter="10"/>
+  
+  <!-- sensors (optionals) -->
+  <!-- laser range="100" angle="-180"/ -->
+
+  <radar slices="8" color="0"/>
+
+</fastsim>
