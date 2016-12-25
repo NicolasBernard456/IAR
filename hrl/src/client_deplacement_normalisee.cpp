@@ -8,7 +8,7 @@ int main(int argc, char **argv){
 	ros::init(argc, argv, "client_deplacement_normalisee");
 	ros::NodeHandle n;
 
-	ros::ServiceClient client = n.serviceClient<hrl::deplacement_normalisee>("/deplacement_normalisee");
+	ros::ServiceClient client = n.serviceClient<hrl::deplacement_normalisee>("/teleport_normalisee");
 	hrl::deplacement_normaliseeRequest req;
 	req.pos.data.push_back(atof(argv[1]));
 	req.pos.data.push_back(atof(argv[2]));
