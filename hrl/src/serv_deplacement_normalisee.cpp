@@ -3,6 +3,9 @@
 #include <hrl/deplacement_normalisee.h>
 #include <hrl/deplacement_normaliseeRequest.h>
 #include <hrl/deplacement_normaliseeResponse.h>
+#include <hrl/fake_deplacement_normalisee.h>
+#include <hrl/fake_deplacement_normaliseeRequest.h>
+#include <hrl/fake_deplacement_normaliseeResponse.h>
 #include <fastsim/Teleport.h>
 #include <fastsim/TeleportRequest.h>
 #include <fastsim/TeleportResponse.h>
@@ -122,13 +125,30 @@ bool deplacement_serveur(hrl::deplacement_normaliseeRequest& req, hrl::deplaceme
 	cl.call(tp_req,tp_resp);
 	resp.rew.data = 0;
 	if(norm_x == 2 && norm_y == 7)
-		resp.rew.data = 1;
+		resp.rew.data = 100;
 // 	else if(!mur)
 // 		resp.rew.data = -1;
 	return true;
 }
 
-
+bool fake_deplacement_serveur(hrl::fake_deplacement_normaliseeRequest& req, hrl::fake_deplacement_normaliseeResponse& resp){
+	cl.waitForExistence();
+	if(req.pos.data.size() != 1){	//On doit avoir une des 8 cases autour du robot(1 à 8,haut , haut+droite, etc , haut + gauche)
+		ROS_ERROR("Erreur sur la request serveur");
+		return false;
+	}
+	int pos = req.pos.data[0];	//Case selctionne
+	int norm_x = x_odom, norm_y = y_odom;	//Valeur x et y normalisees (Chaque rangee de case est une valeur de y et chaque colonne est une valeur de x)
+	bool mur = deplacement_case(&norm_x, &norm_y, pos);
+	resp.rew.data = 0;
+	resp.new_pos.data.push_back(norm_x);
+	resp.new_pos.data.push_back(norm_y);
+	if(norm_x == 2 && norm_y == 7)
+		resp.rew.data = 100;
+// 	else if(!mur)
+// 		resp.rew.data = -1;
+	return true;
+}
 void cb_odom(nav_msgs::Odometry odom){	//REcupere la position courrante du robot
 	x_odom = odom.pose.pose.position.x;	
 	y_odom = odom.pose.pose.position.y;
@@ -140,6 +160,7 @@ int main(int argc, char* argv[]){
 	
 	ros::ServiceServer serv_telep = n.advertiseService("/teleport_normalisee" , teleport_serveur);
 	ros::ServiceServer serv_deplacement = n.advertiseService("/deplacement_normalisee" , deplacement_serveur);
+	ros::ServiceServer serv_fake_deplacement = n.advertiseService("/fake_deplacement_normalisee" , fake_deplacement_serveur);
 	ros::Subscriber sub_odom_norm = n.subscribe("/odom_normalisee", 1 , cb_odom);
 	cl = n.serviceClient<fastsim::Teleport>("/simu_fastsim/teleport");
 	ros::spin();

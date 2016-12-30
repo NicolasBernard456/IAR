@@ -56,6 +56,7 @@ find_package(catkin REQUIRED COMPONENTS
 add_service_files(
   FILES
   deplacement_normalisee.srv
+  fake_deplacement_normalisee.srv
 )
 
 ## Generate actions in the 'action' folder

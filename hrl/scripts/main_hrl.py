@@ -4,6 +4,7 @@ import rospy
 from std_msgs.msg import Int16,Float32,Bool,Float32MultiArray,Int16MultiArray
 from nav_msgs.msg import Odometry
 from hrl.srv import deplacement_normalisee
+from hrl.srv import fake_deplacement_normalisee
 import numpy as np
 import time
 odom = Odometry()
@@ -13,7 +14,6 @@ class Hrl():
         global y 
         self.x = 0.0
         self.y = 0.0
-        self.alpha = 1.0
         self.tau = 10
         self.alphaC = 0.2
         self.alphaA = 0.1
@@ -51,7 +51,7 @@ class Hrl():
       
     def discreteProb(self,p):
         actions = []
-        for i in range(7):
+        for i in range(8):
             actions.insert(i ,i)
         return np.random.choice(actions,1,list(p))[0] 
     
@@ -75,47 +75,62 @@ class Hrl():
         #Wait for service permet d'attendre que le service de deplacement du robot soit utilisable
         rospy.wait_for_service('deplacement_normalisee')
         rospy.wait_for_service('teleport_normalisee')
-        
+        rospy.wait_for_service('fake_deplacement_normalisee')
         #Boucle proncipale
         while (not rospy.is_shutdown()):
             try:
-                if self.last_state != '':
-                    self.last_state = self.state
-                else:
-                    self.last_state = str(self.x) + ' ' + str(self.y)
-                
-                self.state = str(self.x) + ' ' + str(self.y)
+#                if self.last_state != '':
+#                    self.last_state = self.state
+#                else:
+#                    self.last_state = str(self.x) + ' ' + str(self.y)
+                if self.state == '':
+                    self.state = str(self.x) + ' ' + str(self.y)
+                self.last_state = self.state
                 for i in range(8):    
                     if not (self.state+str(i) in self.W.keys()) :
                         self.W[self.state+str(i)] = 0
-
-                self.selection_action() #selection de l'action
                 
                 if not (self.state in self.V.keys()):
-                    self.V[self.state] = 0
-                    
-                    
-                    
+                    self.V[self.state] = 0                
+                
+                self.selection_action() #selection de l'action
+
+
+
+                #faux deplacement
+                fake_deplacement = rospy.ServiceProxy('fake_deplacement_normalisee', fake_deplacement_normalisee)
+                tab = Float32MultiArray()    
+                tab.data = [self.action]           #Placer Ici la case vers laquelle se deplacer comme detaillee dans le readme
+                resp1 = fake_deplacement(tab)
+                self.reward = resp1.rew.data    
+                self.state = str(resp1.new_pos.data[0]) + ' ' + str(resp1.new_pos.data[1])  #oon recupere les nouvelles positions x et y
+                
+                for i in range(8):    
+                   if not (self.state+str(i) in self.W.keys()) :
+                       self.W[self.state+str(i)] = 0
+                if not (self.state in self.V.keys()):
+                   self.V[self.state] = 0
                 
                 delta = self.reward + self.gamma * self.V[self.state] - self.V[self.last_state]  #prediction error
                 
                 
+                self.W[self.last_state+str(self.action)] = self.W[self.last_state+str(self.action)] + self.alphaA * delta
                 self.V[self.last_state] = self.V[self.last_state] + self.alphaC * delta
-                self.W[self.state+str(self.action)] = self.W[self.state+str(self.action)] + self.alphaA * delta
-                
+                print(self.V[self.last_state])
                 # deplacement robot
                 deplacement = rospy.ServiceProxy('deplacement_normalisee', deplacement_normalisee)
                 tab = Float32MultiArray()    
                 tab.data = [self.action]           #Placer Ici la case vers laquelle se deplacer comme detaillee dans le readme
                 resp1 = deplacement(tab)
                 self.reward = resp1.rew.data
-                if(self.reward == 1):
+                if(self.reward == 100):
                     print('OK')
                     teleport = rospy.ServiceProxy('teleport_normalisee', deplacement_normalisee)
                     tab = Float32MultiArray()    
                     tab.data.insert(1,9)
                     tab.data.insert(2,1)                    
                     tp = teleport(tab)
+                    self.state = ''
                 if(self.bool_slow):
                     time.sleep(0.5)
             except rospy.ServiceException, e:
