@@ -3,7 +3,7 @@ import numpy as np;
 from actions import *
 class Maps:
     """
-     La classe Maps est une classe qui génére les maps utilisées pour la simulation
+     La classe Maps est une classe qui genere les maps utilisees pour la simulation
     """
     #Nommage des salles
     #+----+----+
@@ -89,7 +89,7 @@ class Maps:
 
     def selectMap(typeMap):
         """
-        Cette fonction retourne une map en fonction de l'enum passé en parametre.
+        Cette fonction retourne une map en fonction de l'enum passe en parametre.
         typeMap : parametre de type Enum_Maps 
         """
         return typeMap()
@@ -113,7 +113,7 @@ class Maps:
         return False
     
     def getNextPosition(map,posX,posY,action):
-        # Test si le robot est déja dans une case de type mur
+        # Test si le robot est deja dans une case de type mur
         if Maps.isWall(map,posX,posY):
             raise ValueError("The robot is in a wall !")
         [newPosX,newPosY] = action(posX,posY)
@@ -129,7 +129,7 @@ class Maps:
 ########## MAP ENUM ###################
 class Enum_Maps:
     """
-    Enum composé de pointeur de fonction vers les fonctions de la classe Maps
+    Enum compose de pointeur de fonction vers les fonctions de la classe Maps
     """
     
     MAP_ALL = Maps.globalMap

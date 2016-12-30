@@ -1,1 +1,3 @@
 std_msgs/Float32MultiArray pos
+---
+std_msgs/Float32 rew

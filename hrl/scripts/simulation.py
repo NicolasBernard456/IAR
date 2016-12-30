@@ -22,7 +22,7 @@ class Simulation():
 
     def getNextPosition(self):
         """
-            Retourne la future case en fct de l'action à faire.
+            Retourne la future case en fct de l'action a faire.
         """
         [newPosX,newPosY,canMove] = Maps.getNextPosition(self.usedMap, self.currentPosX,self.currentPosY,self.nextAction)
         return [newPosX,newPosY]

@@ -13,42 +13,75 @@ ros::ServiceClient cl;
 int x_odom, y_odom;
 
 
-void deplacement_case(int* x, int* y, int dep){
+bool deplacement_case(int* x, int* y, int dep){
 	int old_x = *x , old_y = *y;
 // 	std::cout << "x = " << *x << " y = " << *y << std::endl;
 
-	if(dep < 1 || dep > 10 || dep == 5)
-		return;
+// 	if(dep < 1 || dep > 10 || dep == 5)
+// 		return false;
+// 	
+// 	if (dep == 8)
+// 		*y = *y - 1; 
+// 	else if (dep == 9){
+// 		*x = *x + 1;
+// 		*y = *y - 1; 
+// 	}
+// 	else if (dep == 6)
+// 		*x = *x + 1;
+// 	else if (dep == 3){
+// 		*x = *x + 1;
+// 		*y = *y + 1;		
+// 	}
+// 	else if (dep == 2)
+// 		*y = *y + 1;
+// 	else if (dep == 1){
+// 		*y = *y + 1;
+// 		*x = *x - 1;
+// 	}
+// 	else if (dep == 4)
+// 		*x = *x - 1;
+// 	else if(dep == 7){
+// 		*y = *y - 1;
+// 		*x = *x - 1;
+// 	}
+	if(dep < 0 || dep > 8)
+		return false;
 	
-	if (dep == 8)
+	if (dep == 0)
 		*y = *y - 1; 
-	else if (dep == 9){
+	else if (dep == 1){
 		*x = *x + 1;
 		*y = *y - 1; 
 	}
-	else if (dep == 6)
+	else if (dep == 2)
 		*x = *x + 1;
 	else if (dep == 3){
 		*x = *x + 1;
 		*y = *y + 1;		
 	}
-	else if (dep == 2)
+	else if (dep == 4)
 		*y = *y + 1;
-	else if (dep == 1){
+	else if (dep == 5){
 		*y = *y + 1;
 		*x = *x - 1;
 	}
-	else if (dep == 4)
+	else if (dep == 6)
 		*x = *x - 1;
 	else if(dep == 7){
 		*y = *y - 1;
 		*x = *x - 1;
 	}
+	
+	
+	
+	
 	//On verifie qu'on ne se cogne pas sur un mur
 	if((*x < 0 || *x > 10 || *y < 0 || *y > 10) || (*x == 5 && !(*y == 9 || *y == 2)) || (*y == 5 && (*x < 5 && *x != 1)) || (*y == 6 && (*x > 5 && *x != 8)) ){ //Le labyrinthe est de taille 11 * 11
 		*x = old_x;
 		*y = old_y;
+		return false;
 	}
+	return true;
 // 	std::cout << "x = " << *x << " y = " << *y << std::endl;
 }
 
@@ -80,14 +113,19 @@ bool deplacement_serveur(hrl::deplacement_normaliseeRequest& req, hrl::deplaceme
 	}
 	int pos = req.pos.data[0];	//Case selctionne
 	int norm_x = x_odom, norm_y = y_odom;	//Valeur x et y normalisees (Chaque rangee de case est une valeur de y et chaque colonne est une valeur de x)
-	deplacement_case(&norm_x, &norm_y, pos);
+	bool mur = deplacement_case(&norm_x, &norm_y, pos);
 	fastsim::TeleportRequest tp_req;	//REquest pour le serveur TP (utilisant des pixels)
 	fastsim::TeleportResponse tp_resp;
 	tp_req.x = 32 + norm_x * 60 + 3 * norm_x;	//Converison en cood pixels
 	tp_req.y = 32 + norm_y * 60 + 3 * norm_y;	//Converison en cood pixels
 	tp_req.theta = 0;
 	cl.call(tp_req,tp_resp);
-	
+	resp.rew.data = 0;
+	if(norm_x == 2 && norm_y == 7)
+		resp.rew.data = 1;
+// 	else if(!mur)
+// 		resp.rew.data = -1;
+	return true;
 }
 
 
