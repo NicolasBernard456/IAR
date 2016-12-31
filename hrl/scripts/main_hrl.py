@@ -21,10 +21,13 @@ class Hrl():
         self.state = '' #Etat dans lequel se trouve le robot
         self.last_state = '' #Precedent etat dans lequel se trouvait le robot
         self.W = {} #Matrice des strengths
+        self.send_data_W = Float32MultiArray()
         self.action = 1 #Action a effectuer
         self.reward = 0 #Reward pour l'action effectuee
         self.V = {}
         self.bool_slow = False #placer a true pour ralentir la simu
+        self.affichage = False
+        self.pub = rospy.Publisher("/Wsended", Float32MultiArray, queue_size = 10)
     #-------------------------------------------
     def callback_odom(self, data):
       #Mise a jour position robot
@@ -51,6 +54,25 @@ class Hrl():
 #        for i in range(8):
 #            actions.insert(i ,i)
 #        return np.random.choice(actions,1,list(p))[0] 
+      
+    def send_W(self):
+        self.send_data_W = Float32MultiArray()
+        print(len(self.W))        
+        for i in range(11):
+            for j in range(11):
+                max = 0.0
+                id = -1
+                for k in range(8):
+                    if not((str(float(i)) + ' ' + str(float(j)) + str(k)) in self.W.keys()):
+                        self.W[str(float(i)) + ' ' + str(float(j)) + str(k)] = 0.0
+                    if max < self.W[str(float(i)) + ' ' + str(float(j)) + str(k)]:
+                        max = self.W[str(float(i)) + ' ' + str(float(j)) + str(k)]
+                        id = k
+                self.send_data_W.data.insert(i+j*11,id)
+        self.pub.publish(self.send_data_W)
+        print(len(self.W))
+      
+      
     
     def selection_action(self):
         tab_proba_action = np.zeros((8,1))
@@ -65,10 +87,16 @@ class Hrl():
     def callback_vitesse_sim(self, data):
         self.bool_slow = data.data
     
+    def callback_affichage_W(self,data):
+        self.affichage = data.data
+    
+    
     def hrl_loop(self):
         #Odom permet de recuperer la position courante du robot
         rospy.Subscriber("/odom_normalisee", Odometry, self.callback_odom)
         rospy.Subscriber("/slow", Bool, self.callback_vitesse_sim)
+        rospy.Subscriber("/affichage_W", Bool, self.callback_affichage_W)
+        
         #Wait for service permet d'attendre que le service de deplacement du robot soit utilisable
         rospy.wait_for_service('deplacement_normalisee')
         rospy.wait_for_service('teleport_normalisee')
@@ -82,15 +110,16 @@ class Hrl():
 #                    self.last_state = str(self.x) + ' ' + str(self.y)
                 if self.state == '':
                     self.state = str(self.x) + ' ' + str(self.y)
+                    print('ok')
                 self.last_state = self.state
 #                print(len(self.V))
                 for i in range(8):    
                     if not (self.state+str(i) in self.W.keys()) :
-                        self.W[self.state+str(i)] = 0
+                        self.W[self.state+str(i)] = 0.0
                 if not ( self.V.has_key(self.state)):                                  
-                    print('Nouvelle case')
-                    self.V[self.state] = 0
-                print(self.V[self.state])
+#                    print('Nouvelle case')
+                    self.V[self.state] = 0.0
+#                print(self.V[self.state])
                 self.selection_action() #selection de l'action
 
 
@@ -112,18 +141,17 @@ class Hrl():
                 
                 for i in range(8):    
                    if not (self.state+str(i) in self.W.keys()) :
-                       self.W[self.state+str(i)] = 0
+                       self.W[self.state+str(i)] = 0.0
                 if not (self.state in self.V.keys()):
-                   self.V[self.state] = 0
+                   self.V[self.state] = 0.0
                 
+#                if(self.reward != 0):
                 delta = self.reward + self.gamma * self.V[self.state] - self.V[self.last_state]  #prediction error
-                
-                
                 self.W[self.last_state+str(self.action)] = self.W[self.last_state+str(self.action)] + self.alphaA * delta
                 self.V[self.last_state] = self.V[self.last_state] + self.alphaC * delta
 #                print(self.V[self.last_state])
                
-                if(self.reward == 100):
+                if(self.reward == 100.0):
                     print('OK')
                     teleport = rospy.ServiceProxy('teleport_normalisee', deplacement_normalisee)
                     tab = Float32MultiArray()    
@@ -132,7 +160,10 @@ class Hrl():
                     tp = teleport(tab)
                     self.state = str(tab.data[0]) + ' ' + str(tab.data[1])
                 if(self.bool_slow):
-                    time.sleep(0.5)
+                    time.sleep(0.5)                
+                if(self.affichage):
+                    self.send_W()
+                    self.affichage = False
             except rospy.ServiceException, e:
                 print "Service call failed: %s"%e
 

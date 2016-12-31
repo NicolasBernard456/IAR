@@ -129,6 +129,8 @@ include_directories(
 ## either from message generation or dynamic reconfigure
 # add_dependencies(hrl ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
+find_package(OpenCV)
+include_directories(${OpenCV_INCLUDE_DIRS})
 ## Declare a C++ executable
 add_executable(send_pose src/send_pose.cpp)
 
@@ -144,6 +146,7 @@ target_link_libraries(client_deplacement_normalisee
 )
 target_link_libraries(serv_deplacement_normalisee
 	${catkin_LIBRARIES}
+	${OpenCV_LIBRARIES}
 )
 add_executable(odom_normalisee src/odom_normalisee.cpp)
 

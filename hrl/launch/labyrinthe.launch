@@ -3,6 +3,6 @@
     <param name="settings" type="str" value="$(find hrl)/envs/labyrinthe.xml"/>
     <param name="path" type="str" value="$(find hrl)/envs" />
   </node>
-  <node pkg = "hrl" type = "serv_deplacement_normalisee" name = "serv_deplacement_normalisee"/>
+  <node pkg = "hrl" type = "serv_deplacement_normalisee" name = "serv_deplacement_normalisee" output = "screen"/>
   <node pkg = "hrl" type = "odom_normalisee" name = "odom_normalisee" />
 </launch>
