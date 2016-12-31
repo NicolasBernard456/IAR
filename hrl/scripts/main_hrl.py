@@ -33,35 +33,32 @@ class Hrl():
       self.x = odom.pose.pose.position.x
       self.y = odom.pose.pose.position.y
       
-#    def discreteProb(self,p):
-#        # Draw a random number using probability table p (column vector)
-#        # Suppose probabilities p=[p(1) ... p(n)] for the values [1:n] are given, sum(p)=1 and the components p(j) are nonnegative. To generate a random sample of size m from this distribution imagine that the interval (0,1) is divided into intervals with the lengths p(1),...,p(n). Generate a uniform number rand, if this number falls in the jth interval give the discrete distribution the value j. Repeat m times.
-#        r = np.random.random()
-#        cumsum = 0
-#        for i in range(len(p)):
-#            cumsum = cumsum + p[i]
-#        cumprob=np.hstack((np.zeros(1),cumsum))
-#        sample = -1
-#        for j in range(len(p)):
-#            if (r>cumprob[j]) & (r<=cumprob[j+1]):
-#                sample = j
-#                break
-#        return sample
-      
-      
     def discreteProb(self,p):
-        actions = []
-        for i in range(8):
-            actions.insert(i ,i)
-        return np.random.choice(actions,1,list(p))[0] 
+        # Draw a random number using probability table p (column vector)
+        # Suppose probabilities p=[p(1) ... p(n)] for the values [1:n] are given, sum(p)=1 and the components p(j) are nonnegative. To generate a random sample of size m from this distribution imagine that the interval (0,1) is divided into intervals with the lengths p(1),...,p(n). Generate a uniform number rand, if this number falls in the jth interval give the discrete distribution the value j. Repeat m times.
+        r = np.random.random()
+        cumprob=np.hstack((np.zeros(1),p.cumsum()))
+        sample = -1
+        for j in range(p.size):
+            if (r>cumprob[j]) & (r<=cumprob[j+1]):
+                sample = j
+                break
+        return sample
+      
+      
+#    def discreteProb(self,p):
+#        actions = []
+#        for i in range(8):
+#            actions.insert(i ,i)
+#        return np.random.choice(actions,1,list(p))[0] 
     
     def selection_action(self):
-        tab_proba_action = []
+        tab_proba_action = np.zeros((8,1))
         somme_exp = 0        
         for i in range(8):
             somme_exp = somme_exp + np.exp(self.W[self.state+str(i)]/self.tau)
         for i in range(8):
-            tab_proba_action.insert(i, np.exp(self.W[self.state+str(i)]/self.tau) / somme_exp)
+            tab_proba_action[i] = np.exp(self.W[self.state+str(i)]/self.tau) / somme_exp
         self.action = self.discreteProb(tab_proba_action)
         
     
@@ -86,23 +83,31 @@ class Hrl():
                 if self.state == '':
                     self.state = str(self.x) + ' ' + str(self.y)
                 self.last_state = self.state
+#                print(len(self.V))
                 for i in range(8):    
                     if not (self.state+str(i) in self.W.keys()) :
                         self.W[self.state+str(i)] = 0
-                
-                if not (self.state in self.V.keys()):
-                    self.V[self.state] = 0                
-                
+                if not ( self.V.has_key(self.state)):                                  
+                    print('Nouvelle case')
+                    self.V[self.state] = 0
+                print(self.V[self.state])
                 self.selection_action() #selection de l'action
 
 
 
-                #faux deplacement
-                fake_deplacement = rospy.ServiceProxy('fake_deplacement_normalisee', fake_deplacement_normalisee)
+#                #faux deplacement
+#                fake_deplacement = rospy.ServiceProxy('fake_deplacement_normalisee', fake_deplacement_normalisee)
+#                tab = Float32MultiArray()    
+#                tab.data = [self.action]           #Placer Ici la case vers laquelle se deplacer comme detaillee dans le readme
+#                resp1 = fake_deplacement(tab)
+#                self.reward = resp1.rew.data    
+#                
+                 # deplacement robot
+                deplacement = rospy.ServiceProxy('deplacement_normalisee', fake_deplacement_normalisee)
                 tab = Float32MultiArray()    
                 tab.data = [self.action]           #Placer Ici la case vers laquelle se deplacer comme detaillee dans le readme
-                resp1 = fake_deplacement(tab)
-                self.reward = resp1.rew.data    
+                resp1 = deplacement(tab)
+                self.reward = resp1.rew.data
                 self.state = str(resp1.new_pos.data[0]) + ' ' + str(resp1.new_pos.data[1])  #oon recupere les nouvelles positions x et y
                 
                 for i in range(8):    
@@ -116,13 +121,8 @@ class Hrl():
                 
                 self.W[self.last_state+str(self.action)] = self.W[self.last_state+str(self.action)] + self.alphaA * delta
                 self.V[self.last_state] = self.V[self.last_state] + self.alphaC * delta
-                print(self.V[self.last_state])
-                # deplacement robot
-                deplacement = rospy.ServiceProxy('deplacement_normalisee', deplacement_normalisee)
-                tab = Float32MultiArray()    
-                tab.data = [self.action]           #Placer Ici la case vers laquelle se deplacer comme detaillee dans le readme
-                resp1 = deplacement(tab)
-                self.reward = resp1.rew.data
+#                print(self.V[self.last_state])
+               
                 if(self.reward == 100):
                     print('OK')
                     teleport = rospy.ServiceProxy('teleport_normalisee', deplacement_normalisee)
@@ -130,7 +130,7 @@ class Hrl():
                     tab.data.insert(1,9)
                     tab.data.insert(2,1)                    
                     tp = teleport(tab)
-                    self.state = ''
+                    self.state = str(tab.data[0]) + ' ' + str(tab.data[1])
                 if(self.bool_slow):
                     time.sleep(0.5)
             except rospy.ServiceException, e:

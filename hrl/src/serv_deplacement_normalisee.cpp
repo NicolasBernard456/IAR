@@ -108,7 +108,7 @@ bool teleport_serveur(hrl::deplacement_normaliseeRequest& req, hrl::deplacement_
 	cl.call(tp_req,tp_resp);
 }
 
-bool deplacement_serveur(hrl::deplacement_normaliseeRequest& req, hrl::deplacement_normaliseeResponse& resp){
+bool deplacement_serveur(hrl::fake_deplacement_normaliseeRequest& req, hrl::fake_deplacement_normaliseeResponse& resp){
 	cl.waitForExistence();
 	if(req.pos.data.size() != 1){	//On doit avoir une des 8 cases autour du robot(1 à 8,haut , haut+droite, etc , haut + gauche)
 		ROS_ERROR("Erreur sur la request serveur");
@@ -126,6 +126,8 @@ bool deplacement_serveur(hrl::deplacement_normaliseeRequest& req, hrl::deplaceme
 	resp.rew.data = 0;
 	if(norm_x == 2 && norm_y == 7)
 		resp.rew.data = 100;
+	resp.new_pos.data.push_back(norm_x);
+	resp.new_pos.data.push_back(norm_y);
 // 	else if(!mur)
 // 		resp.rew.data = -1;
 	return true;
