@@ -142,15 +142,15 @@ std::vector<int> arrow_points(float W, int x, int y){
 	std::vector<int> tab;
 	if(W == 0){
 		tab.push_back(x);
-		tab.push_back(y - 25);
-		tab.push_back(x);
 		tab.push_back(y + 25);
+		tab.push_back(x);
+		tab.push_back(y - 25);
 	}
 	else if(W == 1){
 		tab.push_back(x - 25);
-		tab.push_back(y - 25);
-		tab.push_back(x + 25);
 		tab.push_back(y + 25);
+		tab.push_back(x + 25);
+		tab.push_back(y - 25);
 	}
 	else if(W == 2){
 		tab.push_back(x - 25);
@@ -160,21 +160,21 @@ std::vector<int> arrow_points(float W, int x, int y){
 	}
 	else if(W == 3){
 		tab.push_back(x - 25);
-		tab.push_back(y + 25);
-		tab.push_back(x + 25);
 		tab.push_back(y - 25);
+		tab.push_back(x + 25);
+		tab.push_back(y + 25);
 	}
 	else if(W == 4){
 		tab.push_back(x);
-		tab.push_back(y + 25);
-		tab.push_back(x);
 		tab.push_back(y - 25);
+		tab.push_back(x);
+		tab.push_back(y + 25);
 	}
 	else if(W == 5){
 		tab.push_back(x + 25);
-		tab.push_back(y + 25);
-		tab.push_back(x - 25);
 		tab.push_back(y - 25);
+		tab.push_back(x - 25);
+		tab.push_back(y + 25);
 	}	
 	else if(W == 6){
 		tab.push_back(x + 25);
@@ -184,9 +184,9 @@ std::vector<int> arrow_points(float W, int x, int y){
 	}
 	else if(W == 7){
 		tab.push_back(x + 25);
-		tab.push_back(y - 25);
-		tab.push_back(x - 25);
 		tab.push_back(y + 25);
+		tab.push_back(x - 25);
+		tab.push_back(y - 25);
 	}
 	else{
 		tab.push_back(x);
@@ -203,14 +203,20 @@ void W_sended(std_msgs::Float32MultiArray W){
 	std::cout << W.data.size() << std::endl;
 	for(int i = 0 ; i < 11 ; i++){
 		for(int j = 0 ; j < 11 ; j ++){
+			
 			int i_x = 32 + i * 63;
-			int j_y = (692) - (32 + j * 63);
-			float value_W =  static_cast<int>(W.data[i+11*j]);
-			std::cout << value_W << std::endl;
+			int j_y = 32 + j * 63;
+			float value_W =  static_cast<int>(W.data[j+11*i]);
+			if(value_W != -1){
+				std::cout << value_W << std::endl;
+				std::cout << i << " " << j << std::endl;
+			}
 			std::vector<int> tab = arrow_points(value_W,i_x,j_y);
-			arrowedLine(img,cv::Point(tab[0],tab[3]),cv::Point(tab[2],tab[1]),cv::Scalar(0,0,0));
+			arrowedLine(img,cv::Point(tab[0],tab[1]),cv::Point(tab[2],tab[3]),cv::Scalar(0,0,0));
 		}
 	}
+// 	arrowedLine(img,cv::Point(0,0),cv::Point(500,100),cv::Scalar(0,0,0));
+	
 	cv::namedWindow( "Display", cv::WINDOW_NORMAL );// Create a window for display.
 	
 	if (!img.empty()) {

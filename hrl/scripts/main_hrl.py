@@ -28,6 +28,7 @@ class Hrl():
         self.bool_slow = False #placer a true pour ralentir la simu
         self.affichage = False
         self.pub = rospy.Publisher("/Wsended", Float32MultiArray, queue_size = 10)
+        self.pub_odom = rospy.Publisher("/simu_fastsim/odom", Odometry, queue_size = 10)
     #-------------------------------------------
     def callback_odom(self, data):
       #Mise a jour position robot
@@ -68,7 +69,7 @@ class Hrl():
                     if max < self.W[str(float(i)) + ' ' + str(float(j)) + str(k)]:
                         max = self.W[str(float(i)) + ' ' + str(float(j)) + str(k)]
                         id = k
-                self.send_data_W.data.insert(i+j*11,id)
+                self.send_data_W.data.insert(j+i*11,id)
         self.pub.publish(self.send_data_W)
         print(len(self.W))
       
@@ -93,7 +94,7 @@ class Hrl():
     
     def hrl_loop(self):
         #Odom permet de recuperer la position courante du robot
-        rospy.Subscriber("/odom_normalisee", Odometry, self.callback_odom)
+#        rospy.Subscriber("/odom_normalisee", Odometry, self.callback_odom)
         rospy.Subscriber("/slow", Bool, self.callback_vitesse_sim)
         rospy.Subscriber("/affichage_W", Bool, self.callback_affichage_W)
         
@@ -104,6 +105,7 @@ class Hrl():
         #Boucle proncipale
         while (not rospy.is_shutdown()):
             try:
+                self.reward = 0.0
 #                if self.last_state != '':
 #                    self.last_state = self.state
 #                else:
@@ -149,18 +151,26 @@ class Hrl():
                 delta = self.reward + self.gamma * self.V[self.state] - self.V[self.last_state]  #prediction error
                 self.W[self.last_state+str(self.action)] = self.W[self.last_state+str(self.action)] + self.alphaA * delta
                 self.V[self.last_state] = self.V[self.last_state] + self.alphaC * delta
-#                print(self.V[self.last_state])
+                if(self.W[self.last_state+str(self.action)] != 0):                    
+                    print('changed')
+                    print(self.last_state)
+                    print(self.action)
+#                    self.bool_slow = True
                
                 if(self.reward == 100.0):
                     print('OK')
                     teleport = rospy.ServiceProxy('teleport_normalisee', deplacement_normalisee)
                     tab = Float32MultiArray()    
                     tab.data.insert(1,9)
-                    tab.data.insert(2,1)                    
+                    tab.data.insert(2,1)
+                    odom.pose.pose.position.x = 32 + 9 * 63
+                    odom.pose.pose.position.y = 32 + 1 * 63
+                    self.pub_odom.publish(odom)
                     tp = teleport(tab)
-                    self.state = str(tab.data[0]) + ' ' + str(tab.data[1])
+#                    self.state = str(tab.data[0]) + ' ' + str(tab.data[1])
                 if(self.bool_slow):
-                    time.sleep(0.5)                
+                    time.sleep(1.0)
+                time.sleep(0.075)
                 if(self.affichage):
                     self.send_W()
                     self.affichage = False

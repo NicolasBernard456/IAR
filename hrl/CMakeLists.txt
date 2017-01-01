@@ -144,6 +144,11 @@ add_executable(client_deplacement_normalisee src/client_deplacement_normalisee.c
 target_link_libraries(client_deplacement_normalisee
 	${catkin_LIBRARIES}
 )
+add_executable(save_W src/save_W.cpp)
+
+target_link_libraries(save_W
+	${catkin_LIBRARIES}
+)
 target_link_libraries(serv_deplacement_normalisee
 	${catkin_LIBRARIES}
 	${OpenCV_LIBRARIES}
