@@ -1,7 +1,14 @@
 Tuto d'installation 
- 1) cd ~/catkin_ws/src
- 2) git clone https://github.com/NicolasBernard456/IAR_HRL.git
- 3) cd ~/catkin_ws/src/IAR/libfastsim
+
+	 1) cd ~/catkin_ws/src
+	 2) git clone https://github.com/NicolasBernard456/IAR_HRL.git
+ 	 3) cd ~/catkin_ws/src/IAR/libfastsim
+	 4) ./waf configure
+	 5) ./waf build
+	 6) cd ~/catkin_ws/
+	 7) catkin_make --pkg fastsim      ( 2 fois si besoin ) 
+	 8) catkin_make --pkg hrl          ( 2 fois si besoin ) 
+	 9) Pour verifier l'installation la commande -> 'catkin_make' doit compiler à 100 % sans ereurs
 
 Pour lancer la simu : roslaunch hrl labyrinthe.launch
 Pour déplacer le robot de case en case:
