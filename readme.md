@@ -1,6 +1,6 @@
 Tuto d'installation :
 	 
-	 0) Nous considérons que Ros est correctement intallé sur vos machines
+	 0) Nous considérons que Ros est correctement installé sur vos machines.
 	 1) cd ~/catkin_ws/src
 	 2) git clone https://github.com/NicolasBernard456/IAR_HRL.git
  	 3) cd ~/catkin_ws/src/IAR/libfastsim
