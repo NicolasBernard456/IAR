@@ -158,7 +158,8 @@ add_executable(odom_normalisee src/odom_normalisee.cpp)
 target_link_libraries(odom_normalisee
 	${catkin_LIBRARIES}
 )
-
+add_dependencies(serv_deplacement_normalisee ${${PROJECT_NAME}_EXPORTED_TARGETS}
+)
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 # add_dependencies(hrl_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
