@@ -1,3 +1,8 @@
+Tuto d'installation 
+ 1) cd ~/catkin_ws/src
+ 2) git clone https://github.com/NicolasBernard456/IAR_HRL.git
+ 3) cd ~/catkin_ws/src/IAR/libfastsim
+
 Pour lancer la simu : roslaunch hrl labyrinthe.launch
 Pour déplacer le robot de case en case:
 	-Sur un terminal : rosservice call /deplacement_normalisee *faire tab*
