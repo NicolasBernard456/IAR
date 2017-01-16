@@ -21,10 +21,23 @@ class Hrl():
         self.state = '' #Etat dans lequel se trouve le robot
         self.last_state = '' #Precedent etat dans lequel se trouvait le robot
         self.W = {} #Matrice des strengths
+        
+        #Matrice des strenght pour les options
+        self.W1to2 = np.load('catkin_ws/src/IAR/hrl/data/W1.npy').item()
+        self.W1to3 = np.load('catkin_ws/src/IAR/hrl/data/W0.npy').item()
+        self.W2to1 = np.load('catkin_ws/src/IAR/hrl/data/W2.npy').item()
+        self.W2to4 = np.load('catkin_ws/src/IAR/hrl/data/W3.npy').item()
+        self.W3to1 = np.load('catkin_ws/src/IAR/hrl/data/W4.npy').item()
+        self.W3to4 = np.load('catkin_ws/src/IAR/hrl/data/W5.npy').item()
+        self.W4to2 = np.load('catkin_ws/src/IAR/hrl/data/W6.npy').item()
+        self.W4to3 = np.load('catkin_ws/src/IAR/hrl/data/W7.npy').item()
+        self.W_option = {}
         self.send_data_W = Float32MultiArray()
         self.action = 1 #Action a effectuer
         self.reward = 0 #Reward pour l'action effectuee
         self.V = {}
+        self.t_tot = 1
+        self.pseudo_reward = ''#Permet d'indiquer la position de fin pour une option et donc de savoir quand terminer une option
         self.bool_slow = False #placer a true pour ralentir la simu
         self.affichage = False
         self.pub = rospy.Publisher("/Wsended", Float32MultiArray, queue_size = 10)
@@ -56,42 +69,131 @@ class Hrl():
 #            actions.insert(i ,i)
 #        return np.random.choice(actions,1,list(p))[0] 
       
-    def send_W(self):
+    def send_W(self,arg):
         self.send_data_W = Float32MultiArray()
-        print(len(self.W))        
+        print(len(arg))        
         for i in range(11):
             for j in range(11):
                 max = 0.0
                 id = -1
-                for k in range(8):
-                    if not((str(float(i)) + ' ' + str(float(j)) + str(k)) in self.W.keys()):
-                        self.W[str(float(i)) + ' ' + str(float(j)) + str(k)] = 0.0
-                    if max < self.W[str(float(i)) + ' ' + str(float(j)) + str(k)]:
-                        max = self.W[str(float(i)) + ' ' + str(float(j)) + str(k)]
+                for k in range(10):
+                    if not((str(float(i)) + ' ' + str(float(j)) + str(k)) in arg.keys()):
+                        arg[str(float(i)) + ' ' + str(float(j)) + str(k)] = 0.0
+                    if max < arg[str(float(i)) + ' ' + str(float(j)) + str(k)]:
+                        max = arg[str(float(i)) + ' ' + str(float(j)) + str(k)]
                         id = k
                 self.send_data_W.data.insert(j+i*11,id)
         self.pub.publish(self.send_data_W)
-        print(len(self.W))
+        print(len(arg))
       
       
     
     def selection_action(self):
-        tab_proba_action = np.zeros((8,1))
+        tab_proba_action = np.zeros((10,1))
         somme_exp = 0        
-        for i in range(8):
+        for i in range(10):
             somme_exp = somme_exp + np.exp(self.W[self.state+str(i)]/self.tau)
-        for i in range(8):
+        for i in range(10):
             tab_proba_action[i] = np.exp(self.W[self.state+str(i)]/self.tau) / somme_exp
         self.action = self.discreteProb(tab_proba_action)
         
+    def selection_action_option(self):
+        tab_proba_action = np.zeros((8,1))
+        somme_exp = 0        
+        for i in range(8):
+            somme_exp = somme_exp + np.exp(self.W_option[self.state+str(i)]/self.tau)
+        for i in range(8):
+            tab_proba_action[i] = np.exp(self.W_option[self.state+str(i)]/self.tau) / somme_exp
+#        self.action = self.discreteProb(tab_proba_action)
+            maximum_prob = max(tab_proba_action)
+            self.action = [i for i, j in enumerate(tab_proba_action) if j == m]
     
     def callback_vitesse_sim(self, data):
         self.bool_slow = data.data
     
     def callback_affichage_W(self,data):
         self.affichage = data.data
-    
-    
+        
+    def set_W_option(self):
+        if((self.x < 5.0) & (self.y < 5.0)):
+            if(self.action%2 == 0):
+                self.W_option = self.W1to2
+                self.pseudo_reward = str(5.0) + ' ' + str(2.0)
+            else:
+                self.W_option = self.W1to3
+                self.pseudo_reward = str(1.0) + ' ' + str(5.0)
+        elif((self.x > 5.0) & (self.y < 6.0)):        
+            if(self.action%2 == 0):
+                self.W_option = self.W2to1
+                self.pseudo_reward = str(5.0) + ' ' + str(2.0)
+            else:
+                self.W_option = self.W2to4
+                self.pseudo_reward = str(8.0) + ' ' + str(6.0)        
+        elif((self.x < 5.0) & (self.y > 5.0)):        
+            if(self.action%2 == 0):
+                self.W_option = self.W3to1
+                self.pseudo_reward = str(1.0) + ' ' + str(5.0)
+            else:
+                self.W_option = self.W3to4
+                self.pseudo_reward = str(5.0) + ' ' + str(9.0)
+        elif((self.x > 5.0) & (self.y > 6.0) ):        
+            if(self.action%2 == 0):
+                self.W_option = self.W4to2
+                self.pseudo_reward = str(8.0) + ' ' + str(6.0)
+            else:
+                self.W_option = self.W4to3
+                self.pseudo_reward = str(5.0) + ' ' + str(9.0)
+        elif((self.x == 2.0) & (self.y == 5.0)):     
+            if(self.action%2 == 0):
+                self.W_option = self.W1to2
+                self.pseudo_reward = str(5.0) + ' ' + str(2.0)
+            else:
+                self.W_option = self.W3to4
+                self.pseudo_reward = str(5.0) + ' ' + str(9.0)
+        elif((self.x == 5.0) & (self.y == 2.0)):     
+            if(self.action%2 == 0):
+                self.W_option = self.W1to3
+                self.pseudo_reward = str(1.0) + ' ' + str(5.0)
+            else:
+                self.W_option = self.W2to4
+                self.pseudo_reward = str(8.0) + ' ' + str(6.0)
+        elif((self.x == 2.0) & (self.y == 9.0)):     
+            if(self.action%2 == 0):
+                self.W_option = self.W3to1
+                self.pseudo_reward = str(1.0) + ' ' + str(5.0)
+            else:
+                self.W_option = self.W4to2
+                self.pseudo_reward = str(8.0) + ' ' + str(6.0)
+        elif((self.x == 8.0) & (self.y == 6.0)):     
+            if(self.action%2 == 0):
+                self.W_option = self.W2to1
+                self.pseudo_reward = str(5.0) + ' ' + str(2.0)
+            else:
+                self.W_option = self.W4to3    
+                self.pseudo_reward = str(5.0) + ' ' + str(9.0) 
+                
+                
+    def do_option(self):
+        print('Execution option : going to ' + str(self.pseudo_reward))      
+        self.set_W_option()
+        stop = True
+        self.t_tot = 1
+#        self.send_W(self.W_option)
+        while ((not rospy.is_shutdown()) & (stop == False)):
+            self.selection_action_option() #selection de l'action 
+            # deplacement robot
+            deplacement = rospy.ServiceProxy('deplacement_normalisee', fake_deplacement_normalisee)
+            tab = Float32MultiArray()    
+            tab.data = [self.action]           #Placer Ici la case vers laquelle se deplacer comme detaillee dans le readme
+            resp1 = deplacement(tab)
+            self.reward = self.reward + resp1.rew.data
+            self.state = str(resp1.new_pos.data[0]) + ' ' + str(resp1.new_pos.data[1])  #oon recupere les nouvelles positions x et y
+            self.t_tot = self.t_tot + 1
+            self.x = resp1.new_pos.data[0]
+            self.y = resp1.new_pos.data[1]    
+            if(self.state == self.pseudo_reward):
+                stop = True
+        
     def hrl_loop(self):
         #Odom permet de recuperer la position courante du robot
 #        rospy.Subscriber("/odom_normalisee", Odometry, self.callback_odom)
@@ -103,6 +205,8 @@ class Hrl():
         rospy.wait_for_service('teleport_normalisee')
         rospy.wait_for_service('fake_deplacement_normalisee')
         #Boucle proncipale
+        
+        
         while (not rospy.is_shutdown()):
             try:
                 self.reward = 0.0
@@ -115,40 +219,38 @@ class Hrl():
                     print('ok')
                 self.last_state = self.state
 #                print(len(self.V))
-                for i in range(8):    
+                for i in range(10):    
                     if not (self.state+str(i) in self.W.keys()) :
                         self.W[self.state+str(i)] = 0.0
+#                        print(self.state)
+#                print(self.state)
                 if not ( self.V.has_key(self.state)):                                  
 #                    print('Nouvelle case')
                     self.V[self.state] = 0.0
 #                print(self.V[self.state])
                 self.selection_action() #selection de l'action
-
-
-
-#                #faux deplacement
-#                fake_deplacement = rospy.ServiceProxy('fake_deplacement_normalisee', fake_deplacement_normalisee)
-#                tab = Float32MultiArray()    
-#                tab.data = [self.action]           #Placer Ici la case vers laquelle se deplacer comme detaillee dans le readme
-#                resp1 = fake_deplacement(tab)
-#                self.reward = resp1.rew.data    
-#                
-                 # deplacement robot
-                deplacement = rospy.ServiceProxy('deplacement_normalisee', fake_deplacement_normalisee)
-                tab = Float32MultiArray()    
-                tab.data = [self.action]           #Placer Ici la case vers laquelle se deplacer comme detaillee dans le readme
-                resp1 = deplacement(tab)
-                self.reward = resp1.rew.data
-                self.state = str(resp1.new_pos.data[0]) + ' ' + str(resp1.new_pos.data[1])  #oon recupere les nouvelles positions x et y
+                if(self.action > 8):
+                    self.do_option()
+                else:
+                    # deplacement robot
+                    deplacement = rospy.ServiceProxy('deplacement_normalisee', fake_deplacement_normalisee)
+                    tab = Float32MultiArray()    
+                    tab.data = [self.action]           #Placer Ici la case vers laquelle se deplacer comme detaillee dans le readme
+                    resp1 = deplacement(tab)
+                    self.reward = resp1.rew.data
+                    self.state = str(resp1.new_pos.data[0]) + ' ' + str(resp1.new_pos.data[1])  #oon recupere les nouvelles positions x et y
+                    self.x = resp1.new_pos.data[0]
+                    self.y = resp1.new_pos.data[1]                    
+                    self.t_tot = 1
                 
-                for i in range(8):    
+                for i in range(10):    
                    if not (self.state+str(i) in self.W.keys()) :
                        self.W[self.state+str(i)] = 0.0
                 if not (self.state in self.V.keys()):
                    self.V[self.state] = 0.0
                 
 #                if(self.reward != 0):
-                delta = self.reward + self.gamma * self.V[self.state] - self.V[self.last_state]  #prediction error
+                delta = self.reward + np.power(self.gamma,self.t_tot) * self.V[self.state] - self.V[self.last_state]  #prediction error
                 self.W[self.last_state+str(self.action)] = self.W[self.last_state+str(self.action)] + self.alphaA * delta
                 self.V[self.last_state] = self.V[self.last_state] + self.alphaC * delta
                 if(self.W[self.last_state+str(self.action)] != 0):                    
@@ -172,11 +274,12 @@ class Hrl():
                     time.sleep(1.0)
                 time.sleep(0.075)
                 if(self.affichage):
-                    self.send_W()
+                    self.send_W(self.W)
                     self.affichage = False
             except rospy.ServiceException, e:
                 print "Service call failed: %s"%e
-
+            
+            np.save('catkin_ws/src/IAR/hrl/data/W_hrl.npy', self.W)
 #-------------------------------------------
 if __name__ == '__main__':
     h = Hrl()

@@ -223,11 +223,9 @@ void W_sended(std_msgs::Float32MultiArray W){
 		cv::imshow( "Display", img );                   // Show our image inside it.
 	}
 	cv::waitKey(0);                                          // Wait for a keystroke in the window
-	
-	
-	
-	
 }
+
+
 
 int main(int argc, char* argv[]){
 	ros::init(argc,argv,"serv_deplacement_normalisee");
