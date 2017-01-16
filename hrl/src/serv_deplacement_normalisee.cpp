@@ -199,7 +199,21 @@ std::vector<int> arrow_points(float W, int x, int y){
 }
 
 void W_sended(std_msgs::Float32MultiArray W){
-	cv::Mat img = cv::imread("/home/nico/catkin_ws/src/IAR/hrl/envs/labyrinthe.pbm", CV_LOAD_IMAGE_COLOR);
+	char* pPath;
+  	pPath = getenv ("ROS_PACKAGE_PATH");
+	std::string myString = std::string(pPath); 
+	std::string token;
+	cv::Mat img;
+	while((token != myString) && (!img.data)){
+		printf("%d\n", !img.data); 
+  		token = myString.substr(0,myString.find_first_of(":"));
+  		myString = myString.substr(myString.find_first_of(":") + 1);
+		std::string res = (token.c_str());
+		res = res+"/IAR/hrl/envs/labyrinthe.pbm";
+		img = cv::imread(res, CV_LOAD_IMAGE_COLOR);
+	}
+
+	//cv::Mat img = cv::imread("/home/viki/catkin_ws/src/IAR/hrl/envs/labyrinthe.pbm", CV_LOAD_IMAGE_COLOR);
 	std::cout << W.data.size() << std::endl;
 	for(int i = 0 ; i < 11 ; i++){
 		for(int j = 0 ; j < 11 ; j ++){
@@ -228,6 +242,7 @@ void W_sended(std_msgs::Float32MultiArray W){
 
 
 int main(int argc, char* argv[]){
+
 	ros::init(argc,argv,"serv_deplacement_normalisee");
 	ros::NodeHandle n;
 	
@@ -238,5 +253,9 @@ int main(int argc, char* argv[]){
 	ros::Subscriber sub_sendedW = n.subscribe("/Wsended",1 , W_sended);
 	cl = n.serviceClient<fastsim::Teleport>("/simu_fastsim/teleport");
 	ros::spin();
+
+
+ 	
+
 	return 0;
 }
