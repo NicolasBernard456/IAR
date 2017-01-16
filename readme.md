@@ -9,7 +9,7 @@ Tuto d'installation :
 	 6) cd ~/catkin_ws/
 	 7) catkin_make --pkg fastsim      ( 2 fois si besoin ) 
 	 8) catkin_make --pkg hrl          ( 2 fois si besoin ) 
-	 9) Pour verifier l'installation la commande -> 'catkin_make' doit compiler à 100 % sans ereurs
+	 9) Pour verifier l'installation la commande -> 'catkin_make' doit compiler à 100 % sans erreurs
 
 Pour lancer la simulation : 
 
