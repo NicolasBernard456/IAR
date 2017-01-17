@@ -116,7 +116,7 @@ class Rl():
 				if self.state == '':
 					self.state = str(self.x) +'-'+str(self.y)
 				self.last_state = self.state
-				
+
 				#print("W "+str(self.W)+"\n")
 				for i in range(8):
 					if not (self.state+'-'+str(i) in self.W.keys()) :
@@ -140,8 +140,8 @@ class Rl():
 						self.W[self.state+'-'+str(i)] = 0.0
 				if not (self.state in self.V.keys()):
 					self.V[self.state] = 0.0
-	
-						
+
+
 				delta = self.reward + self.gamma * self.V[self.state] - self.V[self.last_state]  #prediction error
 				self.W[self.last_state+'-'+str(self.action)] = self.W[self.last_state+'-'+str(self.action)] + self.alphaA * delta
 				self.V[self.last_state] = self.V[self.last_state] + self.alphaC * delta
