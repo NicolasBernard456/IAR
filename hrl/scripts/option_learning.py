@@ -19,8 +19,8 @@ class option_learning():
         self.max_x = 0.0
         self.max_y = 0.0
         self.tau = 10
-        self.alphaC = 0.2
-        self.alphaA = 0.1
+        self.alphaC = 0.1
+        self.alphaA = 0.01
         self.gamma = 0.9
         self.state = '' #Etat dans lequel se trouve le robot
         self.last_state = '' #Precedent etat dans lequel se trouvait le robot
@@ -176,13 +176,10 @@ class option_learning():
                                 self.W[self.state+str(i)] = 0.0
                         if not ( self.V.has_key(self.state)):
                             self.V[self.state] = 0.0
-                        passage = False
-                        
-                        while(passage == False | ((self.x < self.min_x) | (self.x > self.max_x) | (self.y < self.min_y) | (self.y > self.max_y))):
+                        while(True):
                             self.selection_action() #selection de l'action
-                            if(passage):
-                                print 'coince'                            
-                            passage = True
+                            
+                            time.sleep(0.075)
                              #fake deplacement robot
                             fake_deplacement = rospy.ServiceProxy('fake_deplacement_normalisee', fake_deplacement_normalisee)
                             tab = Float32MultiArray()    
@@ -194,9 +191,15 @@ class option_learning():
                                 self.reward = 0
                             self.x = resp1.new_pos.data[0]                            
                             self.y = resp1.new_pos.data[1]
-
-#                            print self.x
-#                            print self.y
+                            if(not ((self.x < self.min_x) | (self.x > self.max_x) | (self.y < self.min_y) | (self.y > self.max_y))):
+                                break
+                            elif(self.reward == 100):
+                                break
+                            else:
+                                print 'coince'
+        
+        #                print self.x
+        #                print self.y
                             
                         deplacement = rospy.ServiceProxy('deplacement_normalisee', fake_deplacement_normalisee)
                         tab = Float32MultiArray()    
@@ -271,15 +274,19 @@ if __name__ == '__main__':
     sizey = [5, 5, 6, 6, 5, 5, 4, 4]
     posx_arrive = [1.0, 5.0, 5.0, 8.0, 1.0, 5.0, 8.0, 5.0]
     posy_arrive = [5.0, 2.0, 2.0, 6.0, 5.0, 9.0, 6.0, 9.0]
-    
+         
     h = option_learning()
     rospy.init_node('option_learning', anonymous=True)
+    
+    startTime = rospy.get_time()  
     try:
-        for i in range(8):
+        for i in range(2,8):
             if(i%2 == 0):
                 h.option_learning_loop(posx_depart[i],posy_depart[i],posx_arrive[i],posy_arrive[i],sizex,sizey[i],posx_arrive[i+1],posy_arrive[i+1])            
             else:
                 h.option_learning_loop(posx_depart[i],posy_depart[i],posx_arrive[i],posy_arrive[i],sizex,sizey[i],posx_arrive[i-1],posy_arrive[i-1])            
 
             h.save_dic('W' + str(i))
+        print rospy.get_time() - startTime
     except rospy.ROSInterruptException: pass
+    
