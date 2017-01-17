@@ -15,6 +15,12 @@ Pour lancer la simulation :
 
 	-1) Dans un terminal  => roslaunch hrl labyrinthe.launch
 	-2) Dans un terminal  => rosrun hrl main_hrl.py 
+
+Pour lancer l'apprentissage des options(sous-apprentissage):
+
+	-1) Dans un terminal  => roslaunch hrl labyrinthe.launch
+	-2) Dans un terminal  => rosrun hrl option_learning.py
+
 Pour déplacer le robot de case en case:
 
 	-Dans un terminal : rosservice call /deplacement_normalisee *faire tab*
@@ -39,4 +45,5 @@ Pour déplacer le robot de case en case:
  	7 8 9
 	4 * 6
   	1 2 3
+	
   
