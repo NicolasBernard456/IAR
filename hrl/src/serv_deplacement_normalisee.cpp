@@ -188,6 +188,26 @@ std::vector<int> arrow_points(float W, int x, int y){
 		tab.push_back(x - 25);
 		tab.push_back(y - 25);
 	}
+	else if(W == 8){
+		tab.push_back(x - 12);
+		tab.push_back(y + 25);
+		tab.push_back(x - 12);
+		tab.push_back(y - 25);
+		tab.push_back(x + 12);
+		tab.push_back(y + 25);
+		tab.push_back(x + 12);
+		tab.push_back(y - 25);
+	}
+	else if(W == 9){
+		tab.push_back(x + 25);
+		tab.push_back(y - 12);
+		tab.push_back(x - 25);
+		tab.push_back(y - 12);
+		tab.push_back(x + 25);
+		tab.push_back(y + 12);
+		tab.push_back(x - 25);
+		tab.push_back(y + 12);
+	}
 	else{
 		tab.push_back(x);
 		tab.push_back(y);
@@ -237,6 +257,7 @@ void W_sended(std_msgs::Float32MultiArray W){
 		cv::imshow( "Display", img );                   // Show our image inside it.
 	}
 	cv::waitKey(0);                                          // Wait for a keystroke in the window
+	
 }
 
 

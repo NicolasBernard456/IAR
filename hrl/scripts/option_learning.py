@@ -86,12 +86,25 @@ class option_learning():
     
     def selection_action(self):
         tab_proba_action = np.zeros((8,1))
-        somme_exp = 0        
+        
+        wrong_state = False
+#        while(wrong_state == False):
+        somme_exp = 0
+#            wrong_state = True
         for i in range(8):
             somme_exp = somme_exp + np.exp(self.W[self.state+str(i)]/self.tau)
+            
         for i in range(8):
-            tab_proba_action[i] = np.exp(self.W[self.state+str(i)]/self.tau) / somme_exp
+            tab_proba_action[i] = np.exp(self.W[self.state+str(i)]/self.tau) / somme_exp            
+#                if(tab_proba_action[i] == 1.0):
+#                    wrong_state = False
+#            if(wrong_state == False):
+#                for i in range(8):
+#                    self.W[self.state+str(i)] = 0.0
+#                    print 'Reset W'
         self.action = self.discreteProb(tab_proba_action)
+#        print self.action
+#        print tab_proba_action
         
     
     def callback_vitesse_sim(self, data):
@@ -99,6 +112,11 @@ class option_learning():
     
     def callback_affichage_W(self,data):
         self.affichage = data.data
+    
+    def load_dic(self,name_file):
+        self.W = np.load('catkin_ws/src/IAR/hrl/data/' + name_file + '.npy').item()
+        
+    
     
     def save_dic(self,name_file):
         np.save('catkin_ws/src/IAR/hrl/data/' + name_file + '.npy', self.W)
@@ -143,6 +161,7 @@ class option_learning():
                     posy_depart = posy_final
                 elif(ky == sizey):
                     continue
+
                 self.V = {}
                 self.state = '' #Etat dans lequel se trouve le robot
                 self.last_state = '' #Precedent etat dans lequel se trouvait le robot
@@ -176,7 +195,9 @@ class option_learning():
                                 self.W[self.state+str(i)] = 0.0
                         if not ( self.V.has_key(self.state)):
                             self.V[self.state] = 0.0
+                        count_blocage = 0
                         while(True):
+                            count_blocage = count_blocage + 1
                             self.selection_action() #selection de l'action
                             
                             time.sleep(0.075)
@@ -191,13 +212,20 @@ class option_learning():
                                 self.reward = 0
                             self.x = resp1.new_pos.data[0]                            
                             self.y = resp1.new_pos.data[1]
+#                            print self.x                            
+#                            print self.y
+                            
                             if(not ((self.x < self.min_x) | (self.x > self.max_x) | (self.y < self.min_y) | (self.y > self.max_y))):
                                 break
                             elif(self.reward == 100):
                                 break
                             else:
                                 print 'coince'
-        
+                            print count_blocage
+                            if(count_blocage > 100):
+                                for i in range(8):
+                                    self.W[self.state+str(i)] = 0.0
+                                    print 'Reset W'
         #                print self.x
         #                print self.y
                             
@@ -280,11 +308,16 @@ if __name__ == '__main__':
     
     startTime = rospy.get_time()  
     try:
-        for i in range(2,8):
+        for i in range(0,8):
+            h.load_dic('W' + str(i))
             if(i%2 == 0):
                 h.option_learning_loop(posx_depart[i],posy_depart[i],posx_arrive[i],posy_arrive[i],sizex,sizey[i],posx_arrive[i+1],posy_arrive[i+1])            
             else:
                 h.option_learning_loop(posx_depart[i],posy_depart[i],posx_arrive[i],posy_arrive[i],sizex,sizey[i],posx_arrive[i-1],posy_arrive[i-1])            
+#            if(i%2 == 0):
+#                h.option_learning_loop(posx_depart[i],posy_depart[i],posx_arrive[i],posy_arrive[i],1,1,posx_arrive[i+1],posy_arrive[i+1])            
+#            else:
+#                h.option_learning_loop(posx_depart[i],posy_depart[i],posx_arrive[i],posy_arrive[i],1,1,posx_arrive[i-1],posy_arrive[i-1])            
 
             h.save_dic('W' + str(i))
         print rospy.get_time() - startTime
