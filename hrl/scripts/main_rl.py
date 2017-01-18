@@ -31,6 +31,25 @@ class Rl():
 		self.pub = rospy.Publisher("/Wsended", Float32MultiArray, queue_size = 10)
 		self.pub_odom = rospy.Publisher("/simu_fastsim/odom", Odometry, queue_size = 10)
 	#-------------------------------------------
+	def saveInstance(self):
+		dico = {}
+		#dico["stopSim"] = self.stopSim
+		dico["x"] =  self.x
+		dico["y"] =  self.y
+		dico["state"] =  self.state
+		dico["last_state"] =  self.last_state
+		dico["W"] =  self.W
+		dico["send_data_W"] =  self.send_data_W
+		dico["action"] =  self.action
+		dico["reward"] =  self.reward
+		dico["V"] =  self.V
+		dico["bool_slow"] =  self.bool_slow
+		dico["affichage"] =  self.affichage
+		#dico[""] =  self.pub = rospy.Publisher("/Wsended", Float32MultiArray, queue_size = 10)
+		#dico[""] =  self.pub_odom = rospy.Publisher("/simu_fastsim/odom", Odometry, queue_size = 10)		
+		return dico
+	
+	
 	def callback_odom(self, data):
 		#Mise a jour position robot
 		global odom
@@ -97,6 +116,7 @@ class Rl():
 		self.stopSim = True
 		
 	def rl_loop(self):
+		print ("loop")
 		#Odom permet de recuperer la position courante du robot
 		#rospy.Subscriber("/odom_normalisee", Odometry, self.callback_odom)
 		rospy.Subscriber("/slow", Bool, self.callback_vitesse_sim)
@@ -106,16 +126,15 @@ class Rl():
 		rospy.wait_for_service('deplacement_normalisee')
 		rospy.wait_for_service('teleport_normalisee')
 		rospy.wait_for_service('fake_deplacement_normalisee')
-		#Boucle principale
-		
-		while (not rospy.is_shutdown() | ( self.stopSim)):
+		#Boucle principale		
+		while (not rospy.is_shutdown() | ( self.stopSim)):	
 			try:
 				self.reward = 0.0
 				if self.state == '':
 					self.state = str(self.x) +'-'+str(self.y)
 				self.last_state = self.state
 
-				print("W "+str(self.W)+"\n")
+				#print("W "+str(self.W)+"\n")
 				for i in range(8):
 					if not (self.state+'-'+str(i) in self.W.keys()) :
 						self.W[self.state+'-'+str(i)] = 0.0
@@ -178,3 +197,34 @@ if __name__ == '__main__':
 	try:
 		h.rl_loop()
 	except rospy.ROSInterruptException: pass
+
+def createRL(dico):
+	instance = Rl()
+	#instance.stopSim = dico["stopSim"] 
+	instance.x = dico["x"]
+	instance.y = dico["y"]
+	instance.state = dico["state"]
+	instance.last_state = dico["last_state"] 
+	instance.W = dico["W"]
+	instance.send_data_W = dico["send_data_W"]
+	instance.action = dico["action"] 
+	instance.reward = dico["reward"]
+	instance.V = dico["V"]
+	instance.bool_slow = dico["bool_slow"] 
+	instance.affichage = dico["affichage"]
+	
+	print("----TP-----")
+	# On teleport le robot la ou il etait avant
+	teleport = rospy.ServiceProxy('teleport_normalisee', deplacement_normalisee)
+	tab = Float32MultiArray()
+	xPos = instance.x
+	yPos = instance.y
+	tab.data.insert(1,xPos)
+	tab.data.insert(2,yPos)
+	odom.pose.pose.position.x = 32 + xPos * 63
+	odom.pose.pose.position.y = 32 + yPos * 63
+	instance.pub_odom.publish(odom)
+	tp = teleport(tab)
+	
+	
+	return instance	

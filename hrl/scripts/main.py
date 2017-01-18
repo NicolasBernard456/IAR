@@ -7,10 +7,11 @@ from Tkinter import *
 import os
 import tkFileDialog 
 import tkMessageBox
-import pickle
+import cPickle as pickle 
 import threading 
 from main_hrl import Hrl
 from main_rl import Rl
+from main_rl import createRL
 def createWindowNewSim():
 	mainWindow.withdraw()
 	global newSimWindow
@@ -44,7 +45,7 @@ def startSimul(numSimul):
 		print("-----Start RL-----")
 		h = Rl()
 		#h.rl_loop()
-		simulationWindows(numSimul)
+		simulationWindows(numSimul,0)
 		myTread = threading.Thread(target=h.rl_loop)
 		myTread.start()
 		#simulationWindow.mainloop()
@@ -52,7 +53,7 @@ def startSimul(numSimul):
 	elif(numSimul==1):
 		print("-----Start HRL-----")
 		h = Hrl()
-		simulationWindows(numSimul)
+		simulationWindows(numSimul,0)
 		myTread = threading.Thread(target=h.hrl_loop)
 		myTread.start()
 		
@@ -67,38 +68,44 @@ def loadSimulation():
 	path= tkFileDialog.askopenfilename(**opts)
 	if(not path):return
 	extension = path.split(".")[-1]
-	myfile = open(path, 'r')
-	p = pickle.Unpickler(myfile) 
+	myfile = open(path, "rb")
 	global choice
 	global h
+
 	if(extension == "rl"):
 		print("--It's RL file ")
 		choice = 0
-		h = p.load()
-		myfile.close()
-		#h.rl_loop()	
-		simulationWindows(choice)
+		dico = pickle.load(myfile)
+		h = createRL(dico)
+		myfile.close()	
+		simulationWindows(choice,1)
 		myTread = threading.Thread(target=h.rl_loop)
 		myTread.start()		
 	elif(extension == "hrl"):
 		print("--It's HRL file ")
 		choice = 1
-		h = p.load()
-		myfile.close()
-		#h.hrl_loop()
-		simulationWindows(choice)
-		myTread = threading.Thread(target=h.hrl_loop)
-		myTread.start()		
+		print("----NOT IMPLEMENTED----")
+		return		
+		#dico = pickle.load(myfile)
+		#h = createHRL(dico)
+		#myfile.close()	
+		#simulationWindows(choice,1)
+		#myTread = threading.Thread(target=h.hrl_loop)
+		#myTread.start()		
 	else:
 		print("Error")                          
 	
 		
-def simulationWindows(typeSimul):
+def simulationWindows(typeSimul,parent):
 	print("-simulationWindows : "+str(typeSimul) )
 	global h
 	#newSimWindow.destroy()
 	#newSimWindow.quit()
-	newSimWindow.withdraw()
+	if(parent==0):
+		newSimWindow.withdraw()
+	else:
+		mainWindow.withdraw()
+	
 	global simulationWindow
 	simulationWindow = Toplevel(mainWindow)
 	simulationWindow.protocol("WM_DELETE_WINDOW", on_closing)
@@ -108,51 +115,59 @@ def simulationWindows(typeSimul):
 		simulationWindow.title("HRL Simulation")
 	else:
 		simulationWindow.title("")
-	Button(simulationWindow, text="Stopper la simulation", command=lambda: stopSimulation()).pack()
+	Button(simulationWindow, text="Stopper la simulation", command=lambda: stopSimulation(True)).pack()
 	Button(simulationWindow, text="Stopper et sauvegarder la simulation", command=lambda: stopAndSave()).pack()
 
-def stopSimulation():
+def stopSimulation(stopW):
 	global h
 	result = tkMessageBox.askquestion("Stopper la simulation? ", "Are You Sure? ?", icon='warning')
 	if result == 'yes':
-		h.stopSimulaion()
-		time.sleep(0.5)
+		if(h != None):
+			h.stopSimulaion()
 		if(myTread != None):
 			myTread._Thread__stop()	
-		mainWindow.destroy()
-	time.sleep(0.5)
+		if(stopW==True):
+			mainWindow.destroy()
 	
 	
 def saveSimulation():
 	print("---saveSimulation ")
 	global h
 	opts = {}
+	if(choice==1):
+		print("----NOT IMPLEMENTED----")
+		return
 	if(choice==0):
 		opts['filetypes'] = [('RL files', '*.rl')]
 	elif(choice==1):
 		opts['filetypes'] = [('HRL files', '*.hrl')]
 	else:
 		opts['filetypes'] = [("All files", "*.*")]
-		
+	
 	opts['initialdir'] = './'
 	opts['title'] = "Sauvegarder la simulation"	
-	path= tkFileDialog.askopenfilename(**opts)
+	path= tkFileDialog.asksaveasfilename(**opts)
 	if(not path):return
-	output = open(path, 'w')
-	p = pickle.Pickler(output)                
-	p.dump(h)                               
+	output = open(path, "wb")
+	dico = h.saveInstance()
+	pickle.dump(dico, output)
 	output.close()	
 	print("---Simulation saved")
 	
 def stopAndSave():
-	stopSimulation()
+	stopSimulation(False)
 	saveSimulation()
+	mainWindow.destroy()
+	
 	
 def on_closing():
 	global  myTread
+	global h
 	if tkMessageBox.askokcancel("Quit", "Do you want to quit?"):
-		#if(myTread != None):
-		#	myTread._Thread__stop()
+		if(h != None):
+			h.stopSimulaion()
+		if(myTread != None):
+			myTread._Thread__stop()	
 		mainWindow.destroy()
 			
 
@@ -163,6 +178,8 @@ if __name__ == '__main__':
 		choice = -1
 		global  mainWindow
 		global  myTread
+		global  h
+		h = None
 		myTread = None
 		mainWindow = Tk()
 		mainWindow.title("Projet IAR")	

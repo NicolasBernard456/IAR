@@ -51,6 +51,9 @@ class Hrl():
 		self.pub = rospy.Publisher("/Wsended", Float32MultiArray, queue_size = 10)
 		self.pub_odom = rospy.Publisher("/simu_fastsim/odom", Odometry, queue_size = 10)
 	#-------------------------------------------
+	def saveInstance(self):
+		print()
+		
 	def callback_odom(self, data):
 		#Mise a jour position robot
 		global odom
