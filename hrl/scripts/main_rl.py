@@ -12,6 +12,7 @@ class Rl():
 	def __init__(self):
 		global x
 		global y
+		self.stopSim = False
 		self.x = 0
 		self.y = 0
 		self.tau = 10
@@ -57,11 +58,6 @@ class Rl():
 #        return np.random.choice(actions,1,list(p))[0]
 
 
-	def  state(self,x,y,action):
-		return str(x)+'-'+str(y)+'-'+str(action)
-
-
-
 	def send_W(self):
 		self.send_data_W = Float32MultiArray()
 		print(len(self.W))
@@ -70,10 +66,10 @@ class Rl():
 				max = 0.0
 				id = -1
 				for action in range(8):
-					if not(self.state(xPos,yPos,action) in self.W.keys()):
-						self.W[self.state(xPos,yPos,action)] = 0.0
-					if max < self.W[self.state(xPos,yPos,action)]:
-						max = self.W[self.state(xPos,yPos,action)]
+					if not(str(xPos)+'-'+str(yPos)+'-'+str(action) in self.W.keys()):
+						self.W[str(xPos)+'-'+str(yPos)+'-'+str(action)] = 0.0
+					if max < self.W[str(xPos)+'-'+str(yPos)+'-'+str(action)]:
+						max = self.W[str(xPos)+'-'+str(yPos)+'-'+str(action)]
 						id = k
 				self.send_data_W.data.insert(yPos+xPos*11,id)
 		self.pub.publish(self.send_data_W)
@@ -97,7 +93,9 @@ class Rl():
 	def callback_affichage_W(self,data):
 		self.affichage = data.data
 
-
+	def stopSimulaion(self):
+		self.stopSim = True
+		
 	def rl_loop(self):
 		#Odom permet de recuperer la position courante du robot
 		#rospy.Subscriber("/odom_normalisee", Odometry, self.callback_odom)
@@ -108,16 +106,16 @@ class Rl():
 		rospy.wait_for_service('deplacement_normalisee')
 		rospy.wait_for_service('teleport_normalisee')
 		rospy.wait_for_service('fake_deplacement_normalisee')
-		#Boucle proncipale
-
-		while (not rospy.is_shutdown()):
+		#Boucle principale
+		
+		while (not rospy.is_shutdown() | ( self.stopSim)):
 			try:
 				self.reward = 0.0
 				if self.state == '':
 					self.state = str(self.x) +'-'+str(self.y)
 				self.last_state = self.state
 
-				#print("W "+str(self.W)+"\n")
+				print("W "+str(self.W)+"\n")
 				for i in range(8):
 					if not (self.state+'-'+str(i) in self.W.keys()) :
 						self.W[self.state+'-'+str(i)] = 0.0
@@ -171,6 +169,8 @@ class Rl():
 			except rospy.ServiceException, e:
 				print "Service call failed: %s"%e
 
+		# end while
+		print("---end while ")
 #-------------------------------------------
 if __name__ == '__main__':
 	h = Rl()
