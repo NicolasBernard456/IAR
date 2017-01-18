@@ -128,6 +128,17 @@ class option_learning():
         self.cpt_action = 0
         self.min_cpt_action = 1000
         self.stop = False
+
+    def save_dic_V(self,name_file):
+        np.save('catkin_ws/src/IAR/hrl/data/' + name_file + '.npy', self.V)
+        self.W = {}
+        self.V = {}
+        self.state = '' #Etat dans lequel se trouve le robot
+        self.last_state = '' #Precedent etat dans lequel se trouvait le robot
+        self.cpt_option = 0
+        self.cpt_action = 0
+        self.min_cpt_action = 1000
+        self.stop = False
     
     def option_learning_loop(self,posx_depart_origine,posy_depart_origine,posx_arrive,posy_arrive,sizex,sizey,posx_final,posy_final):
         #Odom permet de recuperer la position courante du robot
@@ -162,7 +173,7 @@ class option_learning():
                 elif(ky == sizey):
                     continue
 
-                self.V = {}
+#                self.V = {}
                 self.state = '' #Etat dans lequel se trouve le robot
                 self.last_state = '' #Precedent etat dans lequel se trouvait le robot
                 self.cpt_option = 0
@@ -309,7 +320,7 @@ if __name__ == '__main__':
     startTime = rospy.get_time()  
     try:
         for i in range(0,8):
-            h.load_dic('W' + str(i))
+#            h.load_dic('W' + str(i))
             if(i%2 == 0):
                 h.option_learning_loop(posx_depart[i],posy_depart[i],posx_arrive[i],posy_arrive[i],sizex,sizey[i],posx_arrive[i+1],posy_arrive[i+1])            
             else:
@@ -320,6 +331,7 @@ if __name__ == '__main__':
 #                h.option_learning_loop(posx_depart[i],posy_depart[i],posx_arrive[i],posy_arrive[i],1,1,posx_arrive[i-1],posy_arrive[i-1])            
 
             h.save_dic('W' + str(i))
+            h.save_dic_V('V' + str(i))
         print rospy.get_time() - startTime
     except rospy.ROSInterruptException: pass
     
