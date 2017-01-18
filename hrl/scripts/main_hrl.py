@@ -7,11 +7,13 @@ from hrl.srv import deplacement_normalisee
 from hrl.srv import fake_deplacement_normalisee
 import numpy as np
 import time
+import os
 odom = Odometry()
 class Hrl():
     def __init__(self):
         global x
         global y 
+        self.stopSim = False
         self.x = 0.0
         self.y = 0.0
         self.tau = 10
@@ -21,16 +23,23 @@ class Hrl():
         self.state = '' #Etat dans lequel se trouve le robot
         self.last_state = '' #Precedent etat dans lequel se trouvait le robot
         self.W = {} #Matrice des strengths
-        
+        split = os.environ.get('ROS_PACKAGE_PATH').split(":")
+        res = ""
+        for val in split:
+            if "catkin_ws"  in val: 
+                res = val
+                break
+                
+    
         #Matrice des strenght pour les options
-        self.W1to2 = np.load('catkin_ws/src/IAR/hrl/data/W1.npy').item()
-        self.W1to3 = np.load('catkin_ws/src/IAR/hrl/data/W0.npy').item()
-        self.W2to1 = np.load('catkin_ws/src/IAR/hrl/data/W2.npy').item()
-        self.W2to4 = np.load('catkin_ws/src/IAR/hrl/data/W3.npy').item()
-        self.W3to1 = np.load('catkin_ws/src/IAR/hrl/data/W4.npy').item()
-        self.W3to4 = np.load('catkin_ws/src/IAR/hrl/data/W5.npy').item()
-        self.W4to2 = np.load('catkin_ws/src/IAR/hrl/data/W6.npy').item()
-        self.W4to3 = np.load('catkin_ws/src/IAR/hrl/data/W7.npy').item()
+        self.W1to2 = np.load(res+'/IAR/hrl/data/W1.npy').item()
+        self.W1to3 = np.load(res+'/IAR/hrl/data/W0.npy').item()
+        self.W2to1 = np.load(res+'/IAR/hrl/data/W2.npy').item()
+        self.W2to4 = np.load(res+'/IAR/hrl/data/W3.npy').item()
+        self.W3to1 = np.load(res+'/IAR/hrl/data/W4.npy').item()
+        self.W3to4 = np.load(res+'/IAR/hrl/data/W5.npy').item()
+        self.W4to2 = np.load(res+'/IAR/hrl/data/W6.npy').item()
+        self.W4to3 = np.load(res+'/IAR/hrl/data/W7.npy').item()
         self.W_option = {}
         self.send_data_W = Float32MultiArray()
         self.action = 1 #Action a effectuer
@@ -193,6 +202,9 @@ class Hrl():
             self.y = resp1.new_pos.data[1]    
             if(self.state == self.pseudo_reward):
                 stop = True
+      
+    def stopSimulaion(self):
+        self.stopSim = True
         
     def hrl_loop(self):
         #Odom permet de recuperer la position courante du robot
@@ -205,9 +217,9 @@ class Hrl():
         rospy.wait_for_service('teleport_normalisee')
         rospy.wait_for_service('fake_deplacement_normalisee')
         #Boucle proncipale
+        global stopSim
         
-        
-        while (not rospy.is_shutdown()):
+        while (not rospy.is_shutdown() | ( self.stopSim)):
             try:
                 self.reward = 0.0
 #                if self.last_state != '':
@@ -280,6 +292,9 @@ class Hrl():
                 print "Service call failed: %s"%e
             
             np.save('catkin_ws/src/IAR/hrl/data/W_hrl.npy', self.W)
+        # end while
+        print("---end while ")
+    
 #-------------------------------------------
 if __name__ == '__main__':
     h = Hrl()
