@@ -14,6 +14,7 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
+
 ros::ServiceClient cl;
 int x_odom, y_odom;
 
@@ -232,7 +233,6 @@ void W_sended(std_msgs::Float32MultiArray W){
 		res = res+"/IAR/hrl/envs/labyrinthe.pbm";
 		img = cv::imread(res, CV_LOAD_IMAGE_COLOR);
 	}
-
 	//cv::Mat img = cv::imread("/home/viki/catkin_ws/src/IAR/hrl/envs/labyrinthe.pbm", CV_LOAD_IMAGE_COLOR);
 	std::cout << W.data.size() << std::endl;
 	for(int i = 0 ; i < 11 ; i++){
@@ -241,17 +241,16 @@ void W_sended(std_msgs::Float32MultiArray W){
 			int i_x = 32 + i * 63;
 			int j_y = 32 + j * 63;
 			float value_W =  static_cast<int>(W.data[j+11*i]);
-			if(value_W != -1){
-				std::cout << value_W << std::endl;
-				std::cout << i << " " << j << std::endl;
-			}
+// 			if(value_W != -1){
+// 				std::cout << value_W << std::endl;
+// 				std::cout << i << " " << j << std::endl;
+// 			}
 			std::vector<int> tab = arrow_points(value_W,i_x,j_y);
-			if(tab.size() == 2)
-				arrowedLine(img,cv::Point(tab[0],tab[1]),cv::Point(tab[2],tab[3]),cv::Scalar(0,0,0));
-			else{
-				arrowedLine(img,cv::Point(tab[0],tab[1]),cv::Point(tab[2],tab[3]),cv::Scalar(0,0,0));
-				arrowedLine(img,cv::Point(tab[4],tab[5]),cv::Point(tab[6],tab[7]),cv::Scalar(0,0,0));
 
+			arrowedLine(img,cv::Point(tab[0],tab[1]),cv::Point(tab[2],tab[3]),cv::Scalar(0,255,0));
+			if(tab.size() > 4){
+				arrowedLine(img,cv::Point(tab[4],tab[5]),cv::Point(tab[6],tab[7]),cv::Scalar(255,0,0));
+				std::cout << "option used" << std::endl;
 			}
 		}
 	}

@@ -105,19 +105,18 @@ class option_learning():
 		self.action = self.discreteProb(tab_proba_action)
 #        print self.action
 #        print tab_proba_action
-
-
+    
 	def callback_vitesse_sim(self, data):
 		self.bool_slow = data.data
-
+    
 	def callback_affichage_W(self,data):
 		self.affichage = data.data
-
+    
 	def load_dic(self,name_file):
 		self.W = np.load('catkin_ws/src/IAR/hrl/data/' + name_file + '.npy').item()
-
-
-
+        
+    
+    
 	def save_dic(self,name_file):
 		np.save('catkin_ws/src/IAR/hrl/data/' + name_file + '.npy', self.W)
 		self.W = {}
@@ -129,18 +128,29 @@ class option_learning():
 		self.min_cpt_action = 1000
 		self.stop = False
 
+	def save_dic_V(self,name_file):
+		np.save('catkin_ws/src/IAR/hrl/data/' + name_file + '.npy', self.V)
+		self.W = {}
+		self.V = {}
+		self.state = '' #Etat dans lequel se trouve le robot
+		self.last_state = '' #Precedent etat dans lequel se trouvait le robot
+		self.cpt_option = 0
+		self.cpt_action = 0
+		self.min_cpt_action = 1000
+		self.stop = False
+    
 	def option_learning_loop(self,posx_depart_origine,posy_depart_origine,posx_arrive,posy_arrive,sizex,sizey,posx_final,posy_final):
 		#Odom permet de recuperer la position courante du robot
-#        rospy.Subscriber("/odom_normalisee", Odometry, self.callback_odom)
+	#        rospy.Subscriber("/odom_normalisee", Odometry, self.callback_odom)
 		rospy.Subscriber("/slow", Bool, self.callback_vitesse_sim)
 		rospy.Subscriber("/affichage_W", Bool, self.callback_affichage_W)
-
+		
 		#Wait for service permet d'attendre que le service de deplacement du robot soit utilisable
-
+		
 		rospy.wait_for_service('deplacement_normalisee')
 		rospy.wait_for_service('teleport_normalisee')
 		rospy.wait_for_service('fake_deplacement_normalisee')
-
+		
 		startT = rospy.get_time()       
 		#Teleporte le robot vers sa position initiale
 		self.max_x = posx_depart_origine + sizex
@@ -149,12 +159,12 @@ class option_learning():
 		self.max_y = posy_depart_origine + sizey
 		posx_depart = posx_depart_origine - 1     
 		posy_depart = posy_depart_origine - 1
-
+		
 		for kx in range(sizex):
 			posx_depart = posx_depart + 1
 			posy_depart = posy_depart_origine - 1
 			for ky in range(sizey + 1):
-
+			
 				posy_depart = posy_depart + 1
 				if((ky == sizey) & (kx == sizex - 1)):
 					posx_depart = posx_final
@@ -162,7 +172,7 @@ class option_learning():
 				elif(ky == sizey):
 					continue
 
-				self.V = {}
+	#                self.V = {}
 				self.state = '' #Etat dans lequel se trouve le robot
 				self.last_state = '' #Precedent etat dans lequel se trouvait le robot
 				self.cpt_option = 0
@@ -181,7 +191,7 @@ class option_learning():
 				tp = teleport(tab)
 				time.sleep(0.075)
 				#Boucle principale
-
+				
 				while ((not rospy.is_shutdown()) & (self.stop == False)):
 					try:
 						self.cpt_action  = self.cpt_action + 1
@@ -199,9 +209,9 @@ class option_learning():
 						while(True):
 							count_blocage = count_blocage + 1
 							self.selection_action() #selection de l'action
-
+						
 							time.sleep(0.075)
-								#fake deplacement robot
+							#fake deplacement robot
 							fake_deplacement = rospy.ServiceProxy('fake_deplacement_normalisee', fake_deplacement_normalisee)
 							tab = Float32MultiArray()    
 							tab.data = [self.action]           #Placer Ici la case vers laquelle se deplacer comme detaillee dans le readme
@@ -212,8 +222,6 @@ class option_learning():
 								self.reward = 0
 							self.x = resp1.new_pos.data[0]                            
 							self.y = resp1.new_pos.data[1]
-#                            print self.x                            
-#                            print self.y
 
 							if(not ((self.x < self.min_x) | (self.x > self.max_x) | (self.y < self.min_y) | (self.y > self.max_y))):
 								break
@@ -302,14 +310,14 @@ if __name__ == '__main__':
 	sizey = [5, 5, 6, 6, 5, 5, 4, 4]
 	posx_arrive = [1.0, 5.0, 5.0, 8.0, 1.0, 5.0, 8.0, 5.0]
 	posy_arrive = [5.0, 2.0, 2.0, 6.0, 5.0, 9.0, 6.0, 9.0]
-
+         
 	h = option_learning()
 	rospy.init_node('option_learning', anonymous=True)
-
+    
 	startTime = rospy.get_time()  
 	try:
 		for i in range(0,8):
-			h.load_dic('W' + str(i))
+#            h.load_dic('W' + str(i))
 			if(i%2 == 0):
 				h.option_learning_loop(posx_depart[i],posy_depart[i],posx_arrive[i],posy_arrive[i],sizex,sizey[i],posx_arrive[i+1],posy_arrive[i+1])            
 			else:
@@ -320,5 +328,6 @@ if __name__ == '__main__':
 #                h.option_learning_loop(posx_depart[i],posy_depart[i],posx_arrive[i],posy_arrive[i],1,1,posx_arrive[i-1],posy_arrive[i-1])            
 
 			h.save_dic('W' + str(i))
+			h.save_dic_V('V' + str(i))
 		print rospy.get_time() - startTime
 	except rospy.ROSInterruptException: pass
