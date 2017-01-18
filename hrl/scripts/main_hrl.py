@@ -28,9 +28,8 @@ class Hrl():
         for val in split:
             if "catkin_ws"  in val: 
                 res = val
-                break
-                
-    
+                break               
+        self.StartTime = rospy.get_time()  
         #Matrice des strenght pour les options
         self.W1to2 = np.load(res+'/IAR/hrl/data/W1.npy').item()
         self.W1to3 = np.load(res+'/IAR/hrl/data/W0.npy').item()
@@ -106,75 +105,91 @@ class Hrl():
             tab_proba_action[i] = np.exp(self.W[self.state+str(i)]/self.tau) / somme_exp
         self.action = self.discreteProb(tab_proba_action)
         
-    def selection_action_option(self):
+    def selection_action_option_prob(self):
         tab_proba_action = np.zeros((8,1))
         somme_exp = 0        
         for i in range(8):
             somme_exp = somme_exp + np.exp(self.W_option[self.state+str(i)]/self.tau)
         for i in range(8):
             tab_proba_action[i] = np.exp(self.W_option[self.state+str(i)]/self.tau) / somme_exp
-#        self.action = self.discreteProb(tab_proba_action)
-            maximum_prob = max(tab_proba_action)
-            self.action = [i for i, j in enumerate(tab_proba_action) if j == m]
+        self.action = self.discreteProb(tab_proba_action)
+        
+    def selection_action_option_determinist(self):
+        max = 0
+        id = -1
+        for i in range(8):
+            if max < self.W_option[self.state+str(i)]:
+                max = self.W_option[self.state+str(i)]
+                id = i
+                
+        if(id != -1):
+            self.action = id
+        else:
+            self.selection_action_option_prob()
+#        print self.action
+        
+        
     
     def callback_vitesse_sim(self, data):
         self.bool_slow = data.data
     
     def callback_affichage_W(self,data):
         self.affichage = data.data
+        np.save('catkin_ws/src/IAR/hrl/data/W_hrl.npy', self.W)
+        print rospy.get_time() - self.StartTime
         
     def set_W_option(self):
         if((self.x < 5.0) & (self.y < 5.0)):
-            if(self.action%2 == 0):
+            if((self.action%2) == 0):
                 self.W_option = self.W1to2
                 self.pseudo_reward = str(5.0) + ' ' + str(2.0)
             else:
                 self.W_option = self.W1to3
                 self.pseudo_reward = str(1.0) + ' ' + str(5.0)
         elif((self.x > 5.0) & (self.y < 6.0)):        
-            if(self.action%2 == 0):
+            if((self.action%2) == 0):
                 self.W_option = self.W2to1
                 self.pseudo_reward = str(5.0) + ' ' + str(2.0)
             else:
                 self.W_option = self.W2to4
                 self.pseudo_reward = str(8.0) + ' ' + str(6.0)        
         elif((self.x < 5.0) & (self.y > 5.0)):        
-            if(self.action%2 == 0):
+            if((self.action%2) == 0):
                 self.W_option = self.W3to1
                 self.pseudo_reward = str(1.0) + ' ' + str(5.0)
             else:
                 self.W_option = self.W3to4
                 self.pseudo_reward = str(5.0) + ' ' + str(9.0)
         elif((self.x > 5.0) & (self.y > 6.0) ):        
-            if(self.action%2 == 0):
+            if((self.action%2) == 0):
                 self.W_option = self.W4to2
                 self.pseudo_reward = str(8.0) + ' ' + str(6.0)
             else:
                 self.W_option = self.W4to3
                 self.pseudo_reward = str(5.0) + ' ' + str(9.0)
         elif((self.x == 2.0) & (self.y == 5.0)):     
-            if(self.action%2 == 0):
+            if((self.action%2) == 0):
                 self.W_option = self.W1to2
                 self.pseudo_reward = str(5.0) + ' ' + str(2.0)
             else:
                 self.W_option = self.W3to4
                 self.pseudo_reward = str(5.0) + ' ' + str(9.0)
         elif((self.x == 5.0) & (self.y == 2.0)):     
-            if(self.action%2 == 0):
+            if((self.action%2) == 0):
                 self.W_option = self.W1to3
                 self.pseudo_reward = str(1.0) + ' ' + str(5.0)
             else:
                 self.W_option = self.W2to4
                 self.pseudo_reward = str(8.0) + ' ' + str(6.0)
         elif((self.x == 2.0) & (self.y == 9.0)):     
-            if(self.action%2 == 0):
+            if((self.action%2) == 0):
                 self.W_option = self.W3to1
                 self.pseudo_reward = str(1.0) + ' ' + str(5.0)
             else:
                 self.W_option = self.W4to2
                 self.pseudo_reward = str(8.0) + ' ' + str(6.0)
         elif((self.x == 8.0) & (self.y == 6.0)):     
-            if(self.action%2 == 0):
+            if((self.action%2) == 0):
                 self.W_option = self.W2to1
                 self.pseudo_reward = str(5.0) + ' ' + str(2.0)
             else:
@@ -182,29 +197,39 @@ class Hrl():
                 self.pseudo_reward = str(5.0) + ' ' + str(9.0) 
                 
                 
-    def do_option(self):
-        print('Execution option : going to ' + str(self.pseudo_reward))      
+    def do_option(self):   
         self.set_W_option()
-        stop = True
+        print('Execution option : going to ' + str(self.pseudo_reward))   
+        stop = False
         self.t_tot = 1
 #        self.send_W(self.W_option)
         while ((not rospy.is_shutdown()) & (stop == False)):
-            self.selection_action_option() #selection de l'action 
+#            self.selection_action_option_prob() #selection de l'action probabiliste
+            self.selection_action_option_determinist() #selection de l'action deterministe
             # deplacement robot
             deplacement = rospy.ServiceProxy('deplacement_normalisee', fake_deplacement_normalisee)
             tab = Float32MultiArray()    
             tab.data = [self.action]           #Placer Ici la case vers laquelle se deplacer comme detaillee dans le readme
             resp1 = deplacement(tab)
-            self.reward = self.reward + resp1.rew.data
+#            self.reward = self.reward + resp1.rew.data
             self.state = str(resp1.new_pos.data[0]) + ' ' + str(resp1.new_pos.data[1])  #oon recupere les nouvelles positions x et y
             self.t_tot = self.t_tot + 1
             self.x = resp1.new_pos.data[0]
             self.y = resp1.new_pos.data[1]    
             if(self.state == self.pseudo_reward):
                 stop = True
-      
+                print 'Ending option arrived at' + str(self.state)
+            time.sleep(0.075)
+
+            if(self.affichage):
+                self.send_W(self.W_option)
+                self.affichage = False
+                #print 'executing option'
+       
+                
     def stopSimulaion(self):
         self.stopSim = True
+
         
     def hrl_loop(self):
         #Odom permet de recuperer la position courante du robot
@@ -256,19 +281,19 @@ class Hrl():
                     self.t_tot = 1
                 
                 for i in range(10):    
-                   if not (self.state+str(i) in self.W.keys()) :
-                       self.W[self.state+str(i)] = 0.0
+                    if not (self.state+str(i) in self.W.keys()) :
+                        self.W[self.state+str(i)] = 0.0
                 if not (self.state in self.V.keys()):
-                   self.V[self.state] = 0.0
+                    self.V[self.state] = 0.0
                 
 #                if(self.reward != 0):
                 delta = self.reward + np.power(self.gamma,self.t_tot) * self.V[self.state] - self.V[self.last_state]  #prediction error
                 self.W[self.last_state+str(self.action)] = self.W[self.last_state+str(self.action)] + self.alphaA * delta
                 self.V[self.last_state] = self.V[self.last_state] + self.alphaC * delta
-                if(self.W[self.last_state+str(self.action)] != 0):                    
-                    print('changed')
-                    print(self.last_state)
-                    print(self.action)
+#                if(self.W[self.last_state+str(self.action)] != 0):                    
+#                    print('changed')
+#                    print(self.last_state)
+#                    print(self.action)
 #                    self.bool_slow = True
                
                 if(self.reward == 100.0):
@@ -288,6 +313,8 @@ class Hrl():
                 if(self.affichage):
                     self.send_W(self.W)
                     self.affichage = False
+                    
+                print rospy.get_time() - self.StartTime
             except rospy.ServiceException, e:
                 print "Service call failed: %s"%e
             
@@ -297,8 +324,8 @@ class Hrl():
     
 #-------------------------------------------
 if __name__ == '__main__':
-    h = Hrl()
     rospy.init_node('deplacement_case', anonymous=True)
+    h = Hrl()
     try:
         h.hrl_loop()
     except rospy.ROSInterruptException: pass

@@ -188,6 +188,26 @@ std::vector<int> arrow_points(float W, int x, int y){
 		tab.push_back(x - 25);
 		tab.push_back(y - 25);
 	}
+	else if(W == 8){
+		tab.push_back(x - 12);
+		tab.push_back(y + 25);
+		tab.push_back(x - 12);
+		tab.push_back(y - 25);
+		tab.push_back(x + 12);
+		tab.push_back(y + 25);
+		tab.push_back(x + 12);
+		tab.push_back(y - 25);
+	}
+	else if(W == 9){
+		tab.push_back(x + 25);
+		tab.push_back(y - 12);
+		tab.push_back(x - 25);
+		tab.push_back(y - 12);
+		tab.push_back(x + 25);
+		tab.push_back(y + 12);
+		tab.push_back(x - 25);
+		tab.push_back(y + 12);
+	}
 	else{
 		tab.push_back(x);
 		tab.push_back(y);
@@ -226,7 +246,13 @@ void W_sended(std_msgs::Float32MultiArray W){
 				std::cout << i << " " << j << std::endl;
 			}
 			std::vector<int> tab = arrow_points(value_W,i_x,j_y);
-			arrowedLine(img,cv::Point(tab[0],tab[1]),cv::Point(tab[2],tab[3]),cv::Scalar(0,0,0));
+			if(tab.size() == 2)
+				arrowedLine(img,cv::Point(tab[0],tab[1]),cv::Point(tab[2],tab[3]),cv::Scalar(0,0,0));
+			else{
+				arrowedLine(img,cv::Point(tab[0],tab[1]),cv::Point(tab[2],tab[3]),cv::Scalar(0,0,0));
+				arrowedLine(img,cv::Point(tab[4],tab[5]),cv::Point(tab[6],tab[7]),cv::Scalar(0,0,0));
+
+			}
 		}
 	}
 // 	arrowedLine(img,cv::Point(0,0),cv::Point(500,100),cv::Scalar(0,0,0));
@@ -237,6 +263,7 @@ void W_sended(std_msgs::Float32MultiArray W){
 		cv::imshow( "Display", img );                   // Show our image inside it.
 	}
 	cv::waitKey(0);                                          // Wait for a keystroke in the window
+	
 }
 
 
