@@ -8,6 +8,7 @@ from hrl.srv import fake_deplacement_normalisee
 import numpy as np
 import time
 odom = Odometry()
+import matplotlib.pyplot as plt
 class Rl():
 	def __init__(self):
 		global x
@@ -30,7 +31,24 @@ class Rl():
 		self.affichage = False
 		self.pub = rospy.Publisher("/Wsended", Float32MultiArray, queue_size = 10)
 		self.pub_odom = rospy.Publisher("/simu_fastsim/odom", Odometry, queue_size = 10)
+		self.nbPartie = 0
+		self.nbPas = 0
+		self.figure = None
+		self.Xpoints = []
+		self.YPoints = []
+		
 	#-------------------------------------------
+	def updateGraph(self):
+		print("--update---")
+		self.Xpoints.append(self.nbPartie)
+		self.YPoints.append(self.nbPas)
+		plt.clf()  
+		plt.ylabel("Steps")
+		plt.xlabel("Episode")		
+		plt.plot(self.Xpoints ,self.YPoints)
+		self.figure.canvas.draw()
+		
+		
 	def saveInstance(self):
 		dico = {}
 		#dico["stopSim"] = self.stopSim
@@ -116,7 +134,6 @@ class Rl():
 		self.stopSim = True
 		
 	def rl_loop(self):
-		print ("loop")
 		#Odom permet de recuperer la position courante du robot
 		#rospy.Subscriber("/odom_normalisee", Odometry, self.callback_odom)
 		rospy.Subscriber("/slow", Bool, self.callback_vitesse_sim)
@@ -129,6 +146,7 @@ class Rl():
 		#Boucle principale		
 		while (not rospy.is_shutdown() | ( self.stopSim)):	
 			try:
+				self.nbPas = self.nbPas + 1
 				self.reward = 0.0
 				if self.state == '':
 					self.state = str(self.x) +'-'+str(self.y)
@@ -170,6 +188,9 @@ class Rl():
 
 				if(self.reward == 100.0):
 					print('reward')
+					self.updateGraph()
+					self.nbPartie = self.nbPartie +1
+					self.nbPas = 0
 					teleport = rospy.ServiceProxy('teleport_normalisee', deplacement_normalisee)
 					tab = Float32MultiArray()
 					tab.data.insert(1,9)
@@ -213,7 +234,6 @@ def createRL(dico):
 	instance.bool_slow = dico["bool_slow"] 
 	instance.affichage = dico["affichage"]
 	
-	print("----TP-----")
 	# On teleport le robot la ou il etait avant
 	teleport = rospy.ServiceProxy('teleport_normalisee', deplacement_normalisee)
 	tab = Float32MultiArray()

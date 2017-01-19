@@ -9,9 +9,15 @@ import tkFileDialog
 import tkMessageBox
 import cPickle as pickle 
 import threading 
-from main_hrl import Hrl
-from main_rl import Rl
-from main_rl import createRL
+from main_hrl import *
+from main_rl import *
+import matplotlib
+matplotlib.use('TkAgg')
+
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import matplotlib.pyplot as plt
+
+import numpy as np
 def createWindowNewSim():
 	mainWindow.withdraw()
 	global newSimWindow
@@ -63,7 +69,7 @@ def startSimul(numSimul):
 def loadSimulation():
 	opts = {}
 	opts['filetypes'] = [('HRL files', '*.hrl'), ('RL files', '*.rl')]
-	opts['initialdir'] = './'
+	opts['initialdir'] = hrlDir
 	opts['title'] = "Selection d'un fichier d'apprentissage"	
 	path= tkFileDialog.askopenfilename(**opts)
 	if(not path):return
@@ -84,14 +90,12 @@ def loadSimulation():
 	elif(extension == "hrl"):
 		print("--It's HRL file ")
 		choice = 1
-		print("----NOT IMPLEMENTED----")
-		return		
-		#dico = pickle.load(myfile)
-		#h = createHRL(dico)
-		#myfile.close()	
-		#simulationWindows(choice,1)
-		#myTread = threading.Thread(target=h.hrl_loop)
-		#myTread.start()		
+		dico = pickle.load(myfile)
+		h = createHRL(dico)
+		myfile.close()	
+		simulationWindows(choice,1)
+		myTread = threading.Thread(target=h.hrl_loop)
+		myTread.start()		
 	else:
 		print("Error")                          
 	
@@ -117,16 +121,40 @@ def simulationWindows(typeSimul,parent):
 		simulationWindow.title("")
 	Button(simulationWindow, text="Stopper la simulation", command=lambda: stopSimulation(True)).pack()
 	Button(simulationWindow, text="Stopper et sauvegarder la simulation", command=lambda: stopAndSave()).pack()
+	fig = plt.figure(1)
+	plt.ion()	
+	plt.ylabel("Steps")
+	plt.xlabel("Episode")
+	
+	canvas = FigureCanvasTkAgg(fig, master=simulationWindow)
+	plot_widget = canvas.get_tk_widget()
+	
+	plot_widget.pack()
+	h.figure = fig
+	#myTreadGraph = threading.Thread(target=updateGraph)
+	#myTreadGraph.start()
+	#updateGraph(5,5)
+	#updateGraph(2,2)
+	
+def updateGraph(nbPas,nbPartie):
+	print("--update---")
+	global fig
+	plt.plot(nbPas ,nbPartie)
+	##d[0].set_ydata(s)
+	fig.canvas.draw()
 
+	
 def stopSimulation(stopW):
 	global h
 	result = tkMessageBox.askquestion("Stopper la simulation? ", "Are You Sure? ?", icon='warning')
 	if result == 'yes':
+		print("Stop")
 		if(h != None):
 			h.stopSimulaion()
 		if(myTread != None):
 			myTread._Thread__stop()	
 		if(stopW==True):
+			mainWindow.quit()    	
 			mainWindow.destroy()
 	
 	
@@ -134,9 +162,6 @@ def saveSimulation():
 	print("---saveSimulation ")
 	global h
 	opts = {}
-	if(choice==1):
-		print("----NOT IMPLEMENTED----")
-		return
 	if(choice==0):
 		opts['filetypes'] = [('RL files', '*.rl')]
 	elif(choice==1):
@@ -144,7 +169,7 @@ def saveSimulation():
 	else:
 		opts['filetypes'] = [("All files", "*.*")]
 	
-	opts['initialdir'] = './'
+	opts['initialdir'] = hrlDir
 	opts['title'] = "Sauvegarder la simulation"	
 	path= tkFileDialog.asksaveasfilename(**opts)
 	if(not path):return
@@ -168,8 +193,8 @@ def on_closing():
 			h.stopSimulaion()
 		if(myTread != None):
 			myTread._Thread__stop()	
-		mainWindow.destroy()
-			
+		mainWindow.quit()    	
+		mainWindow.destroy()			
 
 
 if __name__ == '__main__':
@@ -179,6 +204,17 @@ if __name__ == '__main__':
 		global  mainWindow
 		global  myTread
 		global  h
+		global fig
+		fig = None
+		split = os.environ.get('ROS_PACKAGE_PATH').split(":")
+		catkinDir = ""
+		for val in split:
+			if "catkin_ws"  in val: 
+				catkinDir = val
+				break
+		global  hrlDir
+		hrlDir = catkinDir+"/IAR/hrl/"	
+		
 		h = None
 		myTread = None
 		mainWindow = Tk()
