@@ -183,7 +183,7 @@ def stopAndSave():
 	stopSimulation(False)
 	saveSimulation()
 	mainWindow.destroy()
-	
+	mainWindow.quit()
 	
 def on_closing():
 	global  myTread
@@ -213,7 +213,7 @@ if __name__ == '__main__':
 				catkinDir = val
 				break
 		global  hrlDir
-		hrlDir = catkinDir+"/IAR/hrl/"	
+		hrlDir = catkinDir+"/IAR/hrl/save/"	
 		
 		h = None
 		myTread = None

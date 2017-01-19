@@ -259,8 +259,8 @@ class Hrl():
 			for i in range(8):    					#Reinit des W si necessaire
 				if not (self.state+str(i) in self.W_option.keys()) :
 					self.W_option[self.state+str(i)] = 0.0
-			self.selection_action_option_prob() #selection de l'action probabiliste
-			#self.selection_action_option_determinist() #selection de l'action deterministe
+			#self.selection_action_option_prob() #selection de l'action probabiliste
+			self.selection_action_option_determinist() #selection de l'action deterministe
 				
 			time.sleep(0.075)
 			# deplacement robot
