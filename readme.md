@@ -11,16 +11,26 @@ Tuto d'installation :
 	 8) catkin_make --pkg hrl          ( 2 fois si besoin ) 
 	 9) Pour verifier l'installation la commande -> 'catkin_make' doit compiler à 100 % sans erreurs
 
-Pour lancer la simulation : 
-
-	-1) Dans un terminal  => roslaunch hrl labyrinthe.launch
-	-2) Dans un terminal  => rosrun hrl main_hrl.py 
-
-Pour lancer l'apprentissage des options(sous-apprentissage):
+A.1) Pour lancer l'apprentissage des options(sous-apprentissage):
 
 	-1) Dans un terminal  => roslaunch hrl labyrinthe.launch
 	-2) Dans un terminal  => rosrun hrl option_learning.py
+	
+A.2) Pour lancer la simulation d'un hrl: 
 
+	-1) Dans un terminal  => roslaunch hrl labyrinthe.launch
+	-2) Dans un terminal  => rosrun hrl main_hrl.py 
+	
+B.1) Pour lancer la simulation d'un rl: 
+
+	-1) Dans un terminal  => roslaunch hrl labyrinthe.launch
+	-2) Dans un terminal  => rosrun hrl main_rl.py 
+
+C.1) Pour lancer l'IHM: 
+
+	-1) Dans un terminal  => roslaunch hrl labyrinthe.launch
+	-2) Dans un terminal  => rosrun hrl main.py 
+	
 Pour déplacer le robot de case en case:
 
 	-Dans un terminal : rosservice call /deplacement_normalisee *faire tab*

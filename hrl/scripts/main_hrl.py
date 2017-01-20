@@ -8,7 +8,10 @@ from hrl.srv import fake_deplacement_normalisee
 import numpy as np
 import time
 import os
+import tkFileDialog 
+import tkMessageBox
 odom = Odometry()
+import matplotlib.pyplot as plt
 class Hrl():
 	def __init__(self):
 		global x
@@ -24,21 +27,24 @@ class Hrl():
 		self.last_state = '' #Precedent etat dans lequel se trouvait le robot
 		self.W = {} #Matrice des strengths
 		split = os.environ.get('ROS_PACKAGE_PATH').split(":")
-		self.localDir = ""
+		self.catkinDir = ""
 		for val in split:
 			if "catkin_ws"  in val: 
-				self.localDir = val
-				break               
-		self.StartTime = rospy.get_time()  
+				self.catkinDir = val
+				break
+		self.hrlDir = 	self.catkinDir+"/IAR/hrl/"
+		self.dataDir = self.hrlDir+"/data"
+		self.StartTime = rospy.get_time() 
+		
 		#Matrice des strenght pour les options
-		self.W1to2 = np.load(self.localDir+'/IAR/hrl/data/W1.npy').item()
-		self.W1to3 = np.load(self.localDir+'/IAR/hrl/data/W0.npy').item()
-		self.W2to1 = np.load(self.localDir+'/IAR/hrl/data/W2.npy').item()
-		self.W2to4 = np.load(self.localDir+'/IAR/hrl/data/W3.npy').item()
-		self.W3to1 = np.load(self.localDir+'/IAR/hrl/data/W4.npy').item()
-		self.W3to4 = np.load(self.localDir+'/IAR/hrl/data/W5.npy').item()
-		self.W4to2 = np.load(self.localDir+'/IAR/hrl/data/W6.npy').item()
-		self.W4to3 = np.load(self.localDir+'/IAR/hrl/data/W7.npy').item()
+		self.W1to2 = np.load(self.dataDir+'/W1.npy').item()
+		self.W1to3 = np.load(self.dataDir+'/W0.npy').item()
+		self.W2to1 = np.load(self.dataDir+'/W2.npy').item()
+		self.W2to4 = np.load(self.dataDir+'/W3.npy').item()
+		self.W3to1 = np.load(self.dataDir+'/W4.npy').item()
+		self.W3to4 = np.load(self.dataDir+'/W5.npy').item()
+		self.W4to2 = np.load(self.dataDir+'/W6.npy').item()
+		self.W4to3 = np.load(self.dataDir+'/W7.npy').item()
 		self.W_option = {}
 		self.send_data_W = Float32MultiArray()
 		self.action = 1 #Action a effectuer
@@ -51,12 +57,47 @@ class Hrl():
 		self.pub = rospy.Publisher("/Wsended", Float32MultiArray, queue_size = 10)
 		self.pub_odom = rospy.Publisher("/simu_fastsim/odom", Odometry, queue_size = 10)
 		self.iteration = 0
+		self.nbPartie = 0
+		self.nbPas = 0
+		self.figure = None
+		self.Xpoints = []
+		self.YPoints = []
 	#-------------------------------------------
-	def saveInstance(self):
-		print()
+	def updateGraph(self):
+		print("--update---")
 		
+		self.Xpoints.append(self.nbPartie)
+		self.YPoints.append(self.nbPas)
+		plt.clf()  
+		plt.ylabel("Steps")
+		plt.xlabel("Episode")		
+		plt.plot(self.Xpoints ,self.YPoints)
+		self.figure.canvas.draw()
+		
+	def saveInstance(self):
+		dico = {}
+		#dico["stopSim"] = self.stopSim
+		dico["x"] =  self.x
+		dico["y"] =  self.y
+		dico["state"] =  self.state
+		dico["last_state"] =  self.last_state
+		dico["W"] =  self.W
+		dico["send_data_W"] =  self.send_data_W
+		dico["action"] =  self.action
+		dico["reward"] =  self.reward
+		dico["V"] =  self.V
+		dico["bool_slow"] =  self.bool_slow
+		dico["affichage"] =  self.affichage
+		dico["duringSimul"] = rospy.get_time() - self.StartTime
+		
+		dico["W_option"] =  self.W_option
+		dico["t_tot"] =  self.t_tot
+		dico["pseudo_reward"] =  self.pseudo_reward
+		dico["iteration"] =  self.iteration	
+		return dico
+	
 	def callback_odom(self, data):
-		#Mise a jour position robot
+		#Mise a jour position robot	
 		global odom
 		odom=data
 		self.x = odom.pose.pose.position.x
@@ -81,7 +122,7 @@ class Hrl():
 
 	def send_W(self,arg):
 		self.send_data_W = Float32MultiArray()
-		print(len(arg))        
+		#print(len(arg))        
 		for i in range(11):
 			for j in range(11):
 				max = 0.0
@@ -94,7 +135,7 @@ class Hrl():
 						id = k
 				self.send_data_W.data.insert(j+i*11,id)
 		self.pub.publish(self.send_data_W)
-		print(len(arg))
+		#print(len(arg))
 
 
 
@@ -137,11 +178,13 @@ class Hrl():
     
 	def callback_affichage_W(self,data):
 		self.affichage = data.data
-		np.save('catkin_ws/src/IAR/hrl/data/W_hrl.npy', self.W)
+		np.save(self.dataDir+'/W_hrl.npy', self.W)
 		print rospy.get_time() - self.StartTime
         
 	def stopSimulaion(self):
+		print("stopSimulaion")
 		self.stopSim = True
+		
 	def set_W_option(self):
 		self.W_option = {}
 		#if((self.action%2) == 0):
@@ -218,7 +261,7 @@ class Hrl():
 			for i in range(8):    					#Reinit des W si necessaire
 				if not (self.state+str(i) in self.W_option.keys()) :
 					self.W_option[self.state+str(i)] = 0.0
-				#self.selection_action_option_prob() #selection de l'action probabiliste
+			#self.selection_action_option_prob() #selection de l'action probabiliste
 			self.selection_action_option_determinist() #selection de l'action deterministe
 				
 			time.sleep(0.075)
@@ -232,8 +275,11 @@ class Hrl():
 			self.x = resp1.new_pos.data[0]
 			self.y = resp1.new_pos.data[1]
 			
+			self.nbPas = self.nbPas + 1	 
+			
 			self.iteration = self.iteration + 1
-			print self.iteration
+			#print ("iteration : "+str(self.iteration))
+			
 			if(self.state == self.pseudo_reward):			#Si on atteint la position darrivee
 				stop = True
 				self.action = saver_action 				#On reprend la derniere action selectionne
@@ -253,15 +299,15 @@ class Hrl():
 		rospy.wait_for_service('teleport_normalisee')
 		rospy.wait_for_service('fake_deplacement_normalisee')
 		#Boucle proncipale
-		self.iteration = 0
-        
-		while (not rospy.is_shutdown()):
+		self.iteration = 0		
+		while (not rospy.is_shutdown() | ( self.stopSim)):
 			try:
+				self.nbPas = self.nbPas + 1	
 				self.iteration = self.iteration + 1 			#On compte les iterations
 				self.reward = 0.0					#Initialisation reward
 				if self.state == '':					#Initialisation state
 					self.state = str(self.x) + ' ' + str(self.y)
-					print('ok')
+					#print('ok')
 				self.last_state = self.state				#Initialisation last state
 				for i in range(10):    					#Initialisation des W(state + action)
 					if not (self.state+str(i) in self.W.keys()) :
@@ -275,7 +321,8 @@ class Hrl():
 				self.selection_action() 				#selection de l'action
 				if(self.action >= 8):					#Si on a choisit une option on rentre dans une boucle specifique
 					self.do_option()
-				else:							#Sinon on execute l'action simple
+				else:						
+					#Sinon on execute l'action simple
 					# deplacement robot
 					deplacement = rospy.ServiceProxy('deplacement_normalisee', fake_deplacement_normalisee)
 					tab = Float32MultiArray()    
@@ -301,7 +348,10 @@ class Hrl():
 
 
 				if(self.reward == 100.0):				#Si on atteint la reward
-					print('OK')
+					print('reward')
+					self.updateGraph()
+					self.nbPartie = self.nbPartie +1
+					self.nbPas = 0
 					teleport = rospy.ServiceProxy('teleport_normalisee', deplacement_normalisee)
 					tab = Float32MultiArray()    
 					tab.data.insert(1,9)
@@ -320,12 +370,17 @@ class Hrl():
 					self.send_W(self.W)
 					self.affichage = False
 
-				print self.iteration
-				#                print rospy.get_time() - self.StartTime
+				
+				seconds = rospy.get_time() - self.StartTime
+				m, s = divmod(seconds, 60)
+				h, m = divmod(m, 60)
+				#print "%d:%02d:%02d" % (h, m, s)
+				#print ("iteration : "+str(self.iteration))
 			except rospy.ServiceException, e:
 				print "Service call failed: %s"%e
-
-			np.save('catkin_ws/src/IAR/hrl/data/W_hrl.npy', self.W)
+			
+			
+		np.save(self.dataDir+'/W_hrl.npy', self.W)
 
 #-------------------------------------------
 if __name__ == '__main__':
@@ -335,3 +390,40 @@ if __name__ == '__main__':
 #		h.load_dic('W')
 		h.hrl_loop()
 	except rospy.ROSInterruptException: pass
+
+def createHRL(dico):
+	instance = Hrl()
+	#instance.stopSim = dico["stopSim"] 
+	instance.x = dico["x"]
+	instance.y = dico["y"]
+	instance.state = dico["state"]
+	instance.last_state = dico["last_state"] 
+	instance.W = dico["W"]
+	instance.send_data_W = dico["send_data_W"]
+	instance.action = dico["action"] 
+	instance.reward = dico["reward"]
+	instance.V = dico["V"]
+	instance.bool_slow = dico["bool_slow"] 
+	instance.affichage = dico["affichage"]
+
+	instance .W_option =  dico["W_option"] 
+	instance.t_tot = dico["t_tot"]
+	instance.pseudo_reward = dico["pseudo_reward"]
+	instance.iteration = dico["iteration"]	
+	instance.StartTime = rospy.get_time() - dico["duringSimul"]
+	#self.StartTime = rospy.get_time() 
+	
+	# On teleport le robot la ou il etait avant
+	teleport = rospy.ServiceProxy('teleport_normalisee', deplacement_normalisee)
+	tab = Float32MultiArray()
+	xPos = instance.x
+	yPos = instance.y
+	tab.data.insert(1,xPos)
+	tab.data.insert(2,yPos)
+	odom.pose.pose.position.x = 32 + xPos * 63
+	odom.pose.pose.position.y = 32 + yPos * 63
+	instance.pub_odom.publish(odom)
+	tp = teleport(tab)
+	
+	
+	return instance	
