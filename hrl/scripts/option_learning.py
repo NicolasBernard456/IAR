@@ -38,6 +38,7 @@ class option_learning():
 		self.stop = False
 		self.pub = rospy.Publisher("/Wsended", Float32MultiArray, queue_size = 10)
 		self.pub_odom = rospy.Publisher("/simu_fastsim/odom", Odometry, queue_size = 10)
+		self.iter_simu = 0
 	#-------------------------------------------
 	def callback_odom(self, data):
 		#Mise a jour position robot
@@ -150,7 +151,7 @@ class option_learning():
 		rospy.wait_for_service('deplacement_normalisee')
 		rospy.wait_for_service('teleport_normalisee')
 		rospy.wait_for_service('fake_deplacement_normalisee')
-		
+		self.iter_simu = 0
 		startT = rospy.get_time()       
 		#Teleporte le robot vers sa position initiale
 		self.max_x = posx_depart_origine + sizex
@@ -171,7 +172,6 @@ class option_learning():
 					posy_depart = posy_final
 				elif(ky == sizey):
 					continue
-
 	#                self.V = {}
 				self.state = '' #Etat dans lequel se trouve le robot
 				self.last_state = '' #Precedent etat dans lequel se trouvait le robot
@@ -194,6 +194,7 @@ class option_learning():
 				
 				while ((not rospy.is_shutdown()) & (self.stop == False)):
 					try:
+						self.iter_simu = self.iter_simu + 1
 						self.cpt_action  = self.cpt_action + 1
 						self.reward = 0.0
 						if self.state == '':
@@ -227,13 +228,10 @@ class option_learning():
 								break
 							elif(self.reward == 100):
 								break
-							else:
-								print 'coince'
-							print count_blocage
+							#print count_blocage
 							if(count_blocage > 100):
 								for i in range(8):
 									self.W[self.state+str(i)] = 0.0
-									print 'Reset W'
 		#                print self.x
 		#                print self.y
 
@@ -264,7 +262,7 @@ class option_learning():
 		#                    self.bool_slow = True
 
 						if(self.reward == 100.0):
-							print('OK')
+							#print('OK')
 							teleport = rospy.ServiceProxy('teleport_normalisee', deplacement_normalisee)
 							tab = Float32MultiArray()    
 							tab.data.insert(1,posx_depart)
@@ -288,9 +286,9 @@ class option_learning():
 							if(self.cpt_option > 30): #Si on reussit a atteindre l arrivee 30 fois on considere que l'agent a appris
 								self.stop = True
 								print str(rospy.get_time() - startT)
-							print self.cpt_option
-							print self.min_cpt_action
-							print self.cpt_action
+							#print self.cpt_option
+							#print self.min_cpt_action
+							#print self.cpt_action
 							self.last_cpt_action = self.cpt_action
 							self.cpt_action = 0
 						if(self.bool_slow):
@@ -301,7 +299,8 @@ class option_learning():
 							self.affichage = False
 					except rospy.ServiceException, e:
 						print "Service call failed: %s"%e
-
+		
+		print self.iter_simu
 #-------------------------------------------
 if __name__ == '__main__':
 	posx_depart = [0.0, 0.0, 6.0, 6.0, 0.0, 0.0, 6.0, 6.0]
@@ -317,7 +316,7 @@ if __name__ == '__main__':
 	startTime = rospy.get_time()  
 	try:
 		for i in range(0,8):
-#            h.load_dic('W' + str(i))
+#			h.load_dic('W' + str(i))
 			if(i%2 == 0):
 				h.option_learning_loop(posx_depart[i],posy_depart[i],posx_arrive[i],posy_arrive[i],sizex,sizey[i],posx_arrive[i+1],posy_arrive[i+1])            
 			else:

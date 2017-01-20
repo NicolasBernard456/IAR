@@ -204,7 +204,9 @@ class Hrl():
 			else:
 				self.W_option = self.W4to3    
 				self.pseudo_reward = str(5.0) + ' ' + str(9.0) #Le goal est set a la position 5 9 (case du bas)
-
+	
+	def load_dic(self,name_file):
+		self.W = np.load('catkin_ws/src/IAR/hrl/data/W_hrl.npy').item()
                 
 	def do_option(self):   
 		self.set_W_option()
@@ -330,5 +332,6 @@ if __name__ == '__main__':
 	rospy.init_node('deplacement_case', anonymous=True)
 	h = Hrl()
 	try:
+#		h.load_dic('W')
 		h.hrl_loop()
 	except rospy.ROSInterruptException: pass
